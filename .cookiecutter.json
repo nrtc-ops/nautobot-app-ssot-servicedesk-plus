@@ -1,0 +1,33 @@
+{
+    "cookiecutter": {
+        "codeowner_github_usernames": "mwdean",
+        "full_name": "NRTC DSO",
+        "email": "devsecops@nrtc.coop",
+        "github_org": "nrtc-ops",
+        "system_of_record": "ServiceDesk Plus",
+        "system_of_record_camel": "ServicedeskPlus",
+        "system_of_record_slug": "servicedesk_plus",
+        "model_class_name": "None",
+        "direction_of_sync": "To Nautobot",
+        "app_name": "nautobot_ssot_servicedesk_plus",
+        "verbose_name": "Nautobot SSOT ServiceDesk Plus",
+        "app_slug": "nautobot-ssot-servicedesk-plus",
+        "project_slug": "nautobot-app-ssot-servicedesk-plus",
+        "repo_url": "https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus",
+        "base_url": "ssot-servicedesk-plus",
+        "camel_name": "NautobotSsotServicedeskPlus",
+        "project_short_description": "Nautobot SSOT ServiceDesk Plus",
+        "open_source_license": "Apache-2.0",
+        "docs_base_url": "https://docs.nrtc.cloud",
+        "docs_app_url": "https://docs.nrtc.cloud/projects/nautobot-ssot-servicedesk-plus/en/latest",
+        "_extensions": [
+            "local_extensions.camel_case_to_kebab",
+            "local_extensions.camel_case_to_words",
+            "local_extensions.NautobotVersions"
+        ],
+        "_template": "https://github.com/nautobot/cookiecutter-nautobot-app",
+        "_output_dir": "/Users/mdean/Desktop/devsecops/github/nrtc-ops/nautobot-tools/outputs",
+        "_repo_dir": "/Users/mdean/.cookiecutters/cookiecutter-nautobot-app/nautobot-app-ssot",
+        "_checkout": null
+    }
+}
