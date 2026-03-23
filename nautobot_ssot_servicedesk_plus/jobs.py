@@ -4,7 +4,10 @@ from nautobot.apps.jobs import BooleanVar, register_jobs
 from nautobot_ssot.jobs.base import DataSource, DataTarget
 
 from nautobot_ssot_servicedesk_plus.diff import CustomOrderingDiff
-from nautobot_ssot_servicedesk_plus.diffsync.adapters import ServicedeskPlusRemoteAdapter, ServicedeskPlusNautobotAdapter
+from nautobot_ssot_servicedesk_plus.diffsync.adapters import (
+    ServicedeskPlusNautobotAdapter,
+    ServicedeskPlusRemoteAdapter,
+)
 
 name = "ServiceDesk Plus SSoT"  # pylint: disable=invalid-name
 

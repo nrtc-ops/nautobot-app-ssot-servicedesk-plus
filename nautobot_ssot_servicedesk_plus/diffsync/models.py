@@ -1,9 +1,8 @@
 """Diffsync models for nautobot_ssot_servicedesk_plus."""
-from typing import Optional, Annotated
 
+from typing import Annotated, Optional
 
 from nautobot.dcim.models import Device
-
 from nautobot_ssot.contrib import CustomFieldAnnotation, NautobotModel
 
 
@@ -13,13 +12,7 @@ class DeviceSSoTModel(NautobotModel):
     _model = Device
     _modelname = "device"
     _identifiers = ("name",)
-    _attributes = (
-        "status__name",
-        "role__name",
-        "device_type__name",
-        "location__name",
-        "example_custom_field"
-    )
+    _attributes = ("status__name", "role__name", "device_type__name", "location__name", "example_custom_field")
 
     name: str
     status__name: Optional[str] = None
@@ -28,4 +21,3 @@ class DeviceSSoTModel(NautobotModel):
     location__name: Optional[str] = None
     ip_address: Optional[str] = None
     example_custom_field: Annotated[str, CustomFieldAnnotation(key="my_example_custom_field")]
-    

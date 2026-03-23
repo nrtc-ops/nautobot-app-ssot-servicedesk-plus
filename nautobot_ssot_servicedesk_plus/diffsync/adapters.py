@@ -39,5 +39,3 @@ class ServicedeskPlusNautobotAdapter(NautobotAdapter):
     device = DeviceSSoTModel
 
     top_level = ["device"]
-
-    

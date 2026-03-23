@@ -309,3 +309,6 @@ public
 /compose.yaml
 /dump.sql
 /nautobot_ssot_servicedesk_plus/static/nautobot_ssot_servicedesk_plus/docs
+
+# Claude
+.memsearch
