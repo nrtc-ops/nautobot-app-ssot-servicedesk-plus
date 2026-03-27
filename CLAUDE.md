@@ -57,11 +57,11 @@ All invoke tasks run inside Docker containers. Copy `invoke.example.yml` to `inv
 The app follows the nautobot-ssot DiffSync pattern:
 
 1. **Models** (`diffsync/models.py`) — Five `NautobotModel` subclasses defining sync identifiers and attributes:
-   - `ManufacturerSSoTModel`, `DeviceTypeSSoTModel`, `LocationSSoTModel`, `TenantSSoTModel`, `DeviceSSoTModel`
+    - `ManufacturerSSoTModel`, `DeviceTypeSSoTModel`, `LocationSSoTModel`, `TenantSSoTModel`, `DeviceSSoTModel`
 
 2. **Adapters** (`diffsync/adapters.py`) — Two adapters that load data into DiffSync model instances:
-   - `ServicedeskPlusRemoteAdapter` — fetches from ServiceDesk Plus API via `ServiceDeskPlusClient`
-   - `ServicedeskPlusNautobotAdapter` — loads from Nautobot database (extends `NautobotAdapter`)
+    - `ServicedeskPlusRemoteAdapter` — fetches from ServiceDesk Plus API via `ServiceDeskPlusClient`
+    - `ServicedeskPlusNautobotAdapter` — loads from Nautobot database (extends `NautobotAdapter`)
 
 3. **Jobs** (`jobs.py`) — `ServicedeskPlusDataSource` and `ServicedeskPlusDataTarget` orchestrate the sync. Both accept an `ExternalIntegration` object that provides API URL, token, and SSL settings.
 

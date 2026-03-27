@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ServiceDesk to Nautobot Device Import Tool
+ServiceDesk to Nautobot Device Import Tool.
 
 Fetches workstation/asset data from ServiceDesk API and imports it into Nautobot DCIM.
 Provides field mapping between ServiceDesk and Nautobot data models with relationship handling.
@@ -380,7 +380,7 @@ def fetch_servicedesk_workstations(count=None, start_index=0):
                 # Check if we have more data or reached our limit
                 list_info = data.get("list_info", {})
                 has_more = list_info.get("has_more_rows", False)
-                total_count = list_info.get("total_count", 0)
+                list_info.get("total_count", 0)
 
                 if not has_more or (count and len(all_workstations) >= count):
                     break

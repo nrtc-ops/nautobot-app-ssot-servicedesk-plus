@@ -137,5 +137,7 @@ class ServiceDeskPlusClient:
 
             start_index += len(workstations)
 
-        logger.info("Fetched %d workstations (product_type=%s) from ServiceDesk Plus", len(all_workstations), product_type)
+        logger.info(
+            "Fetched %d workstations (product_type=%s) from ServiceDesk Plus", len(all_workstations), product_type
+        )
         return all_workstations

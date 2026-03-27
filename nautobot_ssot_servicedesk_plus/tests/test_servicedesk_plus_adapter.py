@@ -233,9 +233,15 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
     def test_location_mapping_huntsville_comma(self):
         """Verify 'Huntsville, AL' is normalized to 'HSV'."""
         fixture = [
-            {"id": "9001", "name": "SRV-HSV", "location": "Huntsville, AL",
-             "vendor": {"name": "DELL"}, "state": {"name": "In Use"},
-             "computer_system": {"service_tag": "T1"}, "udf_fields": {}},
+            {
+                "id": "9001",
+                "name": "SRV-HSV",
+                "location": "Huntsville, AL",
+                "vendor": {"name": "DELL"},
+                "state": {"name": "In Use"},
+                "computer_system": {"service_tag": "T1"},
+                "udf_fields": {},
+            },
         ]
         self.client.get_workstations.return_value = fixture
         adapter = ServicedeskPlusRemoteAdapter(job=self.job, sync=None, client=self.client)
@@ -246,9 +252,15 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
     def test_location_mapping_huntsville_no_comma(self):
         """Verify 'Huntsville AL' is normalized to 'HSV'."""
         fixture = [
-            {"id": "9002", "name": "SRV-HSV2", "location": {"name": "Huntsville AL"},
-             "vendor": {"name": "DELL"}, "state": {"name": "In Use"},
-             "computer_system": {"service_tag": "T2"}, "udf_fields": {}},
+            {
+                "id": "9002",
+                "name": "SRV-HSV2",
+                "location": {"name": "Huntsville AL"},
+                "vendor": {"name": "DELL"},
+                "state": {"name": "In Use"},
+                "computer_system": {"service_tag": "T2"},
+                "udf_fields": {},
+            },
         ]
         self.client.get_workstations.return_value = fixture
         adapter = ServicedeskPlusRemoteAdapter(job=self.job, sync=None, client=self.client)
