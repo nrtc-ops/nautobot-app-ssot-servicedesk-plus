@@ -59,7 +59,7 @@ def get_nested_value(data, key_path, default=None):
     return value
 
 
-class ServiceDeskPlusClient:
+class ServiceDeskPlusClient:  # pylint: disable=too-few-public-methods
     """Client for the ServiceDesk Plus REST API.
 
     Handles authentication, pagination, and data retrieval for workstation assets.
