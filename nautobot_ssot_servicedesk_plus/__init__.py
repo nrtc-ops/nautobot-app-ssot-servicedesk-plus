@@ -15,7 +15,7 @@ class NautobotSsotServicedeskPlusConfig(NautobotAppConfig):
     verbose_name = "Nautobot SSOT ServiceDesk Plus"
     version = __version__
     author = "NRTC DSO"
-    description = "Nautobot SSOT ServiceDesk Plus."
+    description = "Nautobot SSoT integration with ManageEngine ServiceDesk Plus."
     base_url = "ssot-servicedesk-plus"
     required_settings = []
     default_settings = {}

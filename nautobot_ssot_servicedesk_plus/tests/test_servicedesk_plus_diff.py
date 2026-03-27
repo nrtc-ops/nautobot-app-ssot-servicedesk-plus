@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from diffsync.enum import DiffSyncActions
 from nautobot.core.testing import TestCase
 
-from nautobot_ssot_servicedesk_plus.jobs import CustomOrderingDiff
+from nautobot_ssot_servicedesk_plus.diff import CustomOrderingDiff
 
 
 class TestCustomOrderingDiff(TestCase):

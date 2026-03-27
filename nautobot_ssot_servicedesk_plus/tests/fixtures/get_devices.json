@@ -1,1 +1,281 @@
-{}
+[
+  {
+    "id": "1001",
+    "name": "DESKTOP-ABC123",
+    "asset_tag": "NRTC-0001",
+    "description": "Main office workstation",
+    "location": {
+      "name": "Oklahoma City"
+    },
+    "site": {
+      "name": "NRTC HQ"
+    },
+    "vendor": {
+      "name": "DELL"
+    },
+    "computer_system": {
+      "service_tag": "SVCTAG001",
+      "model": "OptiPlex 7090",
+      "system_manufacturer": "Dell Inc."
+    },
+    "product_type": {
+      "name": "Desktop"
+    },
+    "state": {
+      "name": "In Use"
+    },
+    "udf_fields": {
+      "udf_sline_14115": "ws-okc-desk01.nrtc.coop",
+      "udf_sline_14122": "OptiPlex 7090 SFF"
+    }
+  },
+  {
+    "id": "1002",
+    "name": "LAPTOP-XYZ789",
+    "asset_tag": "NRTC-0002",
+    "description": "Field technician laptop",
+    "location": {
+      "name": "Tulsa Branch"
+    },
+    "site": {
+      "name": "Tulsa Office"
+    },
+    "vendor": {
+      "name": "DELL"
+    },
+    "computer_system": {
+      "service_tag": "SVCTAG002",
+      "model": "Latitude 5540",
+      "system_manufacturer": "Dell Inc."
+    },
+    "product_type": {
+      "name": "Laptop"
+    },
+    "state": {
+      "name": "Deployed"
+    },
+    "udf_fields": {
+      "udf_sline_14115": "lt-tulsa-tech01.nrtc.coop",
+      "udf_sline_14122": "Latitude 5540"
+    }
+  },
+  {
+    "id": "1003",
+    "name": "SRV-DB-PROD",
+    "asset_tag": "NRTC-0003",
+    "description": "Production database server",
+    "location": {
+      "name": "Oklahoma City"
+    },
+    "site": {
+      "name": "NRTC HQ"
+    },
+    "vendor": {
+      "name": "DELL"
+    },
+    "computer_system": {
+      "service_tag": "SVCTAG003",
+      "model": "PowerEdge R640",
+      "system_manufacturer": "Dell Inc."
+    },
+    "product_type": {
+      "name": "Server"
+    },
+    "state": {
+      "name": "In Use"
+    },
+    "udf_fields": {
+      "udf_sline_14115": "srv-db-prod01.nrtc.coop",
+      "udf_sline_14122": "PowerEdge R640"
+    }
+  },
+  {
+    "id": "1004",
+    "name": "HP-SPARE-01",
+    "asset_tag": null,
+    "description": "Spare HP workstation in storage",
+    "location": "Norman Warehouse",
+    "site": {
+      "name": "Norman Depot"
+    },
+    "vendor": {
+      "name": "HP"
+    },
+    "computer_system": {
+      "service_tag": "HPSVCTAG01",
+      "model": "EliteDesk 800 G6",
+      "system_manufacturer": "HP Inc."
+    },
+    "product_type": {
+      "name": "Desktop"
+    },
+    "state": {
+      "name": "In Store"
+    },
+    "udf_fields": {}
+  },
+  {
+    "id": "1005",
+    "name": "OLD-SERVER-RETIRE",
+    "asset_tag": "NRTC-0005",
+    "description": "Server scheduled for decommission",
+    "location": {
+      "name": "Oklahoma City"
+    },
+    "site": {
+      "name": "NRTC HQ"
+    },
+    "vendor": {
+      "name": "DELL"
+    },
+    "computer_system": {
+      "service_tag": "SVCTAG005",
+      "model": "PowerEdge R340",
+      "system_manufacturer": "Dell Inc."
+    },
+    "product_type": {
+      "name": "Server"
+    },
+    "state": {
+      "name": "Retired"
+    },
+    "udf_fields": {
+      "udf_sline_14115": "srv-old-retire.nrtc.coop",
+      "udf_sline_14122": "PowerEdge R340"
+    }
+  },
+  {
+    "id": "1006",
+    "name": "",
+    "asset_tag": null,
+    "description": "",
+    "location": null,
+    "site": null,
+    "vendor": null,
+    "computer_system": {
+      "service_tag": "SVCTAG006",
+      "model": null,
+      "system_manufacturer": null
+    },
+    "product_type": null,
+    "state": null,
+    "udf_fields": {}
+  },
+  {
+    "id": "1007",
+    "name": "DUPE-HOSTNAME",
+    "asset_tag": "NRTC-0007A",
+    "description": "First device with this name",
+    "location": {
+      "name": "Tulsa Branch"
+    },
+    "site": {
+      "name": "Tulsa Office"
+    },
+    "vendor": {
+      "name": "LENOVO"
+    },
+    "computer_system": {
+      "service_tag": "LNVTAG001",
+      "model": "ThinkCentre M920",
+      "system_manufacturer": "Lenovo"
+    },
+    "product_type": {
+      "name": "Desktop"
+    },
+    "state": {
+      "name": "In Use"
+    },
+    "udf_fields": {
+      "udf_sline_14115": "dupe-host.nrtc.coop",
+      "udf_sline_14122": "ThinkCentre M920"
+    }
+  },
+  {
+    "id": "1008",
+    "name": "DUPE-HOSTNAME-2",
+    "asset_tag": "NRTC-0007B",
+    "description": "Second device that resolves to same UDF hostname",
+    "location": {
+      "name": "Tulsa Branch"
+    },
+    "site": {
+      "name": "Tulsa Office"
+    },
+    "vendor": {
+      "name": "LENOVO"
+    },
+    "computer_system": {
+      "service_tag": "LNVTAG002",
+      "model": "ThinkCentre M920",
+      "system_manufacturer": "Lenovo"
+    },
+    "product_type": {
+      "name": "Desktop"
+    },
+    "state": {
+      "name": "In Use"
+    },
+    "udf_fields": {
+      "udf_sline_14115": "dupe-host.nrtc.coop",
+      "udf_sline_14122": "ThinkCentre M920"
+    }
+  },
+  {
+    "id": "1009",
+    "name": "MAINT-SWITCH",
+    "asset_tag": "NRTC-0009",
+    "description": "Network switch under maintenance",
+    "location": {
+      "name": "Oklahoma City"
+    },
+    "site": {
+      "name": "NRTC HQ"
+    },
+    "vendor": {
+      "name": "HP"
+    },
+    "computer_system": {
+      "service_tag": "HPNETTAG01",
+      "model": null,
+      "system_manufacturer": "HP Inc."
+    },
+    "product_type": {
+      "name": "Network"
+    },
+    "state": {
+      "name": "Maintenance"
+    },
+    "udf_fields": {
+      "udf_sline_14115": "sw-okc-maint01.nrtc.coop"
+    }
+  },
+  {
+    "id": "1010",
+    "name": "FAULTY-WS",
+    "asset_tag": "NRTC-0010",
+    "description": "Workstation with hardware failure",
+    "location": "-",
+    "site": {
+      "name": "Norman Depot"
+    },
+    "vendor": {
+      "name": "DELL"
+    },
+    "computer_system": {
+      "service_tag": "SVCTAG010",
+      "model": "OptiPlex 5080",
+      "system_manufacturer": "Dell Inc."
+    },
+    "product_type": {
+      "name": "Desktop"
+    },
+    "state": {
+      "name": "Faulty"
+    },
+    "udf_fields": {
+      "udf_sline_14115": "ws-faulty01.nrtc.coop",
+      "udf_sline_14122": "OptiPlex 5080"
+    }
+  }
+]
