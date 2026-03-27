@@ -2,7 +2,7 @@
 
 from typing import Annotated, Optional
 
-from nautobot.dcim.models import Device, DeviceType, Location, Manufacturer
+from nautobot.dcim.models import Device, DeviceType, Interface, Location, Manufacturer
 from nautobot.tenancy.models import Tenant
 from nautobot_ssot.contrib import CustomFieldAnnotation, NautobotModel
 
@@ -70,6 +70,8 @@ class DeviceSSoTModel(NautobotModel):
         "location__name",
         "tenant__name",
         "power_type",
+        "idrac_ip",
+        "idrac_op_id",
     )
 
     name: str
@@ -82,3 +84,19 @@ class DeviceSSoTModel(NautobotModel):
     location__name: Optional[str] = None
     tenant__name: Optional[str] = None
     power_type: Annotated[Optional[str], CustomFieldAnnotation(key="power_type")] = None
+    idrac_ip: Annotated[Optional[str], CustomFieldAnnotation(key="idrac_ip")] = None
+    idrac_op_id: Annotated[Optional[str], CustomFieldAnnotation(key="idrac_op_id")] = None
+
+
+class InterfaceSSoTModel(NautobotModel):
+    """SSoT model for device network interfaces."""
+
+    _model = Interface
+    _modelname = "interface"
+    _identifiers = ("name", "device__name")
+    _attributes = ("type", "status__name")
+
+    name: str
+    device__name: str
+    type: str = "other"
+    status__name: Optional[str] = "Active"

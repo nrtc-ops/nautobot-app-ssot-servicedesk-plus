@@ -84,10 +84,13 @@
     "state": {
       "name": "In Use"
     },
+    "ip_addresses": "96.46.118.18",
     "udf_fields": {
       "udf_sline_14115": "srv-db-prod01.nrtc.coop",
       "udf_sline_14122": "PowerEdge R640",
-      "udf_pick_8415": "AC"
+      "udf_pick_8415": "AC",
+      "udf_sline_14127": "96.46.118.19",
+      "udf_sline_14128": "sk6jlxwneeop2calbzoxfextqe"
     }
   },
   {

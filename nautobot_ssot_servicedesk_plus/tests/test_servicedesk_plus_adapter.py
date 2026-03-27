@@ -230,6 +230,32 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
         loc_names = [loc.name for loc in locations]
         self.assertEqual(loc_names.count("Oklahoma City"), 1)
 
+    def test_location_mapping_huntsville_comma(self):
+        """Verify 'Huntsville, AL' is normalized to 'HSV'."""
+        fixture = [
+            {"id": "9001", "name": "SRV-HSV", "location": "Huntsville, AL",
+             "vendor": {"name": "DELL"}, "state": {"name": "In Use"},
+             "computer_system": {"service_tag": "T1"}, "udf_fields": {}},
+        ]
+        self.client.get_workstations.return_value = fixture
+        adapter = ServicedeskPlusRemoteAdapter(job=self.job, sync=None, client=self.client)
+        adapter.load()
+        device = [d for d in adapter.get_all("device")][0]
+        self.assertEqual(device.location__name, "HSV")
+
+    def test_location_mapping_huntsville_no_comma(self):
+        """Verify 'Huntsville AL' is normalized to 'HSV'."""
+        fixture = [
+            {"id": "9002", "name": "SRV-HSV2", "location": {"name": "Huntsville AL"},
+             "vendor": {"name": "DELL"}, "state": {"name": "In Use"},
+             "computer_system": {"service_tag": "T2"}, "udf_fields": {}},
+        ]
+        self.client.get_workstations.return_value = fixture
+        adapter = ServicedeskPlusRemoteAdapter(job=self.job, sync=None, client=self.client)
+        adapter.load()
+        device = [d for d in adapter.get_all("device")][0]
+        self.assertEqual(device.location__name, "HSV")
+
     # -- Tenant --
 
     def test_tenant_from_site(self):
@@ -304,6 +330,68 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
         self.adapter.load()
         device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
         self.assertIsNone(device.power_type)
+
+    # -- iDRAC IP --
+
+    def test_idrac_ip_from_udf(self):
+        """Verify iDRAC IP extracted from UDF field."""
+        self.adapter.load()
+        device = self._get_device("SRV-DB-PROD.srv-db-prod01.nrtc.coop")
+        self.assertEqual(device.idrac_ip, "96.46.118.19")
+
+    def test_idrac_ip_none_when_missing(self):
+        """Verify iDRAC IP is None when UDF field is absent."""
+        self.adapter.load()
+        device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
+        self.assertIsNone(device.idrac_ip)
+
+    def test_idrac_op_id_from_udf(self):
+        """Verify iDRAC OP ID extracted from UDF field."""
+        self.adapter.load()
+        device = self._get_device("SRV-DB-PROD.srv-db-prod01.nrtc.coop")
+        self.assertEqual(device.idrac_op_id, "sk6jlxwneeop2calbzoxfextqe")
+
+    def test_idrac_op_id_none_when_missing(self):
+        """Verify iDRAC OP ID is None when UDF field is absent."""
+        self.adapter.load()
+        device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
+        self.assertIsNone(device.idrac_op_id)
+
+    # -- Primary IP / Interface --
+
+    def test_primary_ip_extracted(self):
+        """Verify primary IP is stored in device_primary_ips mapping."""
+        self.adapter.load()
+        self.assertEqual(
+            self.adapter.device_primary_ips.get("SRV-DB-PROD.srv-db-prod01.nrtc.coop"),
+            "96.46.118.18",
+        )
+
+    def test_no_primary_ip_when_missing(self):
+        """Verify devices without ip_addresses are not in device_primary_ips."""
+        self.adapter.load()
+        self.assertNotIn("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop", self.adapter.device_primary_ips)
+
+    def test_interface_created_for_device_with_ip(self):
+        """Verify em1_bond0 interface is created for devices that have an IP."""
+        self.adapter.load()
+        interfaces = self.adapter.get_all("interface")
+        iface_device_names = {i.device__name for i in interfaces}
+        self.assertIn("SRV-DB-PROD.srv-db-prod01.nrtc.coop", iface_device_names)
+
+    def test_no_interface_for_device_without_ip(self):
+        """Verify no interface is created for devices without an IP."""
+        self.adapter.load()
+        interfaces = self.adapter.get_all("interface")
+        iface_device_names = {i.device__name for i in interfaces}
+        self.assertNotIn("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop", iface_device_names)
+
+    def test_interface_name_is_em1_bond0(self):
+        """Verify interface name is em1_bond0."""
+        self.adapter.load()
+        interfaces = self.adapter.get_all("interface")
+        for iface in interfaces:
+            self.assertEqual(iface.name, "em1_bond0")
 
     # -- Helper --
 

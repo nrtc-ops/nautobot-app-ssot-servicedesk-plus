@@ -29,6 +29,12 @@ DEFAULT_ROLE = "NUS"
 DEFAULT_STATUS = "Active"
 DEFAULT_LOCATION_TYPE = "Site"
 
+# Location name normalization — maps SDP location variants to canonical Nautobot names
+LOCATION_MAPPINGS = {
+    "Huntsville, AL": "HSV",
+    "Huntsville AL": "HSV",
+}
+
 
 def get_nested_value(data, key_path, default=None):
     """Get value from nested dictionary using dot notation.

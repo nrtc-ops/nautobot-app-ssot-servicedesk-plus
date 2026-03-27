@@ -9,6 +9,7 @@ from nautobot_ssot.contrib import NautobotAdapter
 from nautobot_ssot_servicedesk_plus.diffsync.models import (
     DeviceSSoTModel,
     DeviceTypeSSoTModel,
+    InterfaceSSoTModel,
     LocationSSoTModel,
     ManufacturerSSoTModel,
     TenantSSoTModel,
@@ -17,11 +18,14 @@ from nautobot_ssot_servicedesk_plus.utils.servicedesk_plus import (
     DEFAULT_LOCATION_TYPE,
     DEFAULT_ROLE,
     DEFAULT_STATUS,
+    LOCATION_MAPPINGS,
     STATUS_MAPPINGS,
     get_nested_value,
 )
 
 logger = logging.getLogger(__name__)
+
+INTERFACE_NAME = "em1_bond0"
 
 
 class ServicedeskPlusRemoteAdapter(Adapter):
@@ -32,8 +36,9 @@ class ServicedeskPlusRemoteAdapter(Adapter):
     location = LocationSSoTModel
     tenant = TenantSSoTModel
     device = DeviceSSoTModel
+    interface = InterfaceSSoTModel
 
-    top_level = ["manufacturer", "device_type", "location", "tenant", "device"]
+    top_level = ["manufacturer", "device_type", "location", "tenant", "device", "interface"]
 
     def __init__(self, *args, job=None, sync=None, client=None, **kwargs):
         """Initialize the ServiceDesk Plus adapter.
@@ -49,6 +54,8 @@ class ServicedeskPlusRemoteAdapter(Adapter):
         self.job = job
         self.sync = sync
         self.client = client
+        # Store device→IP mapping for post-sync IP assignment
+        self.device_primary_ips = {}
 
     def _extract_device_name(self, workstation):
         """Build device name from SDP name and UDF hostname.
@@ -89,13 +96,18 @@ class ServicedeskPlusRemoteAdapter(Adapter):
         return str(service_tag).strip() if service_tag else ""
 
     def _extract_location_name(self, workstation):
-        """Extract location name, handling both string and dict formats."""
+        """Extract location name, handling both string and dict formats.
+
+        Applies LOCATION_MAPPINGS to normalize known variants.
+        """
         location = workstation.get("location")
         if isinstance(location, dict):
-            return location.get("name")
-        if isinstance(location, str) and location.strip() and location.strip() not in ("-", "N/A", "null"):
-            return location.strip()
-        return None
+            name = location.get("name")
+        elif isinstance(location, str) and location.strip() and location.strip() not in ("-", "N/A", "null"):
+            name = location.strip()
+        else:
+            return None
+        return LOCATION_MAPPINGS.get(name, name)
 
     def _extract_tenant_name(self, workstation):
         """Extract tenant name from ServiceDesk site.
@@ -132,6 +144,19 @@ class ServicedeskPlusRemoteAdapter(Adapter):
         if match:
             return match.group(1).upper()
 
+        return None
+
+    def _extract_primary_ip(self, workstation):
+        """Extract primary IP address from workstation.
+
+        Uses ip_addresses field (first entry if comma-separated).
+        """
+        ip_str = workstation.get("ip_addresses")
+        if isinstance(ip_str, str) and ip_str.strip():
+            # Take the first IP if comma-separated
+            ip = ip_str.split(",")[0].strip()
+            if ip and ip not in ("-", "N/A", "null"):
+                return ip
         return None
 
     def load(self):
@@ -187,6 +212,15 @@ class ServicedeskPlusRemoteAdapter(Adapter):
             # Power type: UDF field first, then parse from model
             power_type = self._extract_power_type(workstation)
 
+            # iDRAC IP and OP ID
+            idrac_ip = get_nested_value(workstation, "udf_fields.udf_sline_14127")
+            idrac_op_id = get_nested_value(workstation, "udf_fields.udf_sline_14128")
+
+            # Primary IP (for post-sync interface/IP assignment)
+            primary_ip = self._extract_primary_ip(workstation)
+            if primary_ip:
+                self.device_primary_ips[name] = primary_ip
+
             # -- Add related objects (deduplicated) --
 
             if manufacturer_name not in seen_manufacturers:
@@ -230,12 +264,27 @@ class ServicedeskPlusRemoteAdapter(Adapter):
                     location__name=location_name,
                     tenant__name=tenant_name,
                     power_type=power_type,
+                    idrac_ip=idrac_ip,
+                    idrac_op_id=idrac_op_id,
                 )
             )
 
+            # -- Add interface for devices with an IP --
+
+            if primary_ip:
+                self.add(
+                    InterfaceSSoTModel(
+                        name=INTERFACE_NAME,
+                        device__name=name,
+                        type="other",
+                        status__name="Active",
+                    )
+                )
+
         self.job.logger.info(
-            "Loaded %d devices, %d manufacturers, %d device types, %d locations, %d tenants",
+            "Loaded %d devices, %d with IPs, %d manufacturers, %d device types, %d locations, %d tenants",
             len(seen_devices),
+            len(self.device_primary_ips),
             len(seen_manufacturers),
             len(seen_device_types),
             len(seen_locations),
@@ -251,5 +300,6 @@ class ServicedeskPlusNautobotAdapter(NautobotAdapter):
     location = LocationSSoTModel
     tenant = TenantSSoTModel
     device = DeviceSSoTModel
+    interface = InterfaceSSoTModel
 
-    top_level = ["manufacturer", "device_type", "location", "tenant", "device"]
+    top_level = ["manufacturer", "device_type", "location", "tenant", "device", "interface"]
