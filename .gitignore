@@ -312,3 +312,6 @@ public
 
 # Claude
 .memsearch
+
+nautobot_ssot_servicedesk_plus/utils/servicedesk_starter_script.py
+nautobot_ssot_servicedesk_plus/utils/servicedesk_api_fetch.py
