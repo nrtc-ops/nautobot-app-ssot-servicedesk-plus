@@ -86,7 +86,8 @@
     },
     "udf_fields": {
       "udf_sline_14115": "srv-db-prod01.nrtc.coop",
-      "udf_sline_14122": "PowerEdge R640"
+      "udf_sline_14122": "PowerEdge R640",
+      "udf_pick_8415": "AC"
     }
   },
   {
@@ -130,7 +131,7 @@
     },
     "computer_system": {
       "service_tag": "SVCTAG005",
-      "model": "PowerEdge R340",
+      "model": "PowerEdge R340 (DC)",
       "system_manufacturer": "Dell Inc."
     },
     "product_type": {
@@ -195,7 +196,7 @@
     "id": "1008",
     "name": "DUPE-HOSTNAME-2",
     "asset_tag": "NRTC-0007B",
-    "description": "Second device that resolves to same UDF hostname",
+    "description": "Second device that resolves to same combined name",
     "location": {
       "name": "Tulsa Branch"
     },
@@ -277,5 +278,62 @@
       "udf_sline_14115": "ws-faulty01.nrtc.coop",
       "udf_sline_14122": "OptiPlex 5080"
     }
+  },
+  {
+    "id": "1011",
+    "name": "rad0",
+    "asset_tag": "NRTC-0011",
+    "description": "Customer-site radio server",
+    "location": {
+      "name": "Oklahoma City"
+    },
+    "site": {
+      "name": "Common Site"
+    },
+    "vendor": {
+      "name": "DELL"
+    },
+    "computer_system": {
+      "service_tag": "SVCTAG011",
+      "model": "PowerEdge R340",
+      "system_manufacturer": "Dell Inc."
+    },
+    "product_type": {
+      "name": "Server"
+    },
+    "state": {
+      "name": "In Use"
+    },
+    "udf_fields": {
+      "udf_sline_14115": "rad0.comporium.net",
+      "udf_sline_14122": "PowerEdge R340"
+    }
+  },
+  {
+    "id": "1012",
+    "name": "srv-common-nohostname",
+    "asset_tag": "NRTC-0012",
+    "description": "Common Site device with no hostname",
+    "location": {
+      "name": "Tulsa Branch"
+    },
+    "site": {
+      "name": "Common Site"
+    },
+    "vendor": {
+      "name": "DELL"
+    },
+    "computer_system": {
+      "service_tag": "SVCTAG012",
+      "model": "PowerEdge R640",
+      "system_manufacturer": "Dell Inc."
+    },
+    "product_type": {
+      "name": "Server"
+    },
+    "state": {
+      "name": "In Use"
+    },
+    "udf_fields": {}
   }
 ]

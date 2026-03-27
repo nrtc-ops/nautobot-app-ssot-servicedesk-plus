@@ -52,15 +52,15 @@ OUTPUT:
     - JSON export of fetched data for review
 """
 
-import httpx
-import json
 import argparse
-import sys
 import csv
+import json
 import os
-from datetime import datetime
-from pathlib import Path
+import sys
 from itertools import islice
+from pathlib import Path
+
+import httpx
 import urllib3
 
 # Disable SSL warnings for self-signed certificates
@@ -341,7 +341,7 @@ def fetch_servicedesk_workstations(count=None, start_index=0):
     all_workstations = []
     row_count = min(count or 100, 100)  # ServiceDesk may have limits
 
-    print(f"🔄 Fetching workstations from ServiceDesk...")
+    print("🔄 Fetching workstations from ServiceDesk...")
 
     with httpx.Client(http2=True, verify=False, timeout=30.0) as client:
         current_index = start_index
@@ -375,9 +375,7 @@ def fetch_servicedesk_workstations(count=None, start_index=0):
                     break
 
                 all_workstations.extend(workstations)
-                print(
-                    f"📥 Fetched {len(workstations)} workstations (total: {len(all_workstations)})"
-                )
+                print(f"📥 Fetched {len(workstations)} workstations (total: {len(all_workstations)})")
 
                 # Check if we have more data or reached our limit
                 list_info = data.get("list_info", {})
@@ -494,7 +492,6 @@ def transform_servicedesk_to_nautobot(servicedesk_record, uuid_maps, log_rows):
                 "status",
                 "tenant",
             ]:
-
                 # Apply status mapping
                 if nb_field == "status" and value in STATUS_MAPPINGS:
                     value = STATUS_MAPPINGS[value]
@@ -519,15 +516,11 @@ def transform_servicedesk_to_nautobot(servicedesk_record, uuid_maps, log_rows):
                         )
                     elif nb_field == "device_type":
                         # For device types, we need manufacturer
-                        manufacturer_name = clean_value(
-                            get_nested_value(servicedesk_record, "vendor.name")
-                        )
+                        manufacturer_name = clean_value(get_nested_value(servicedesk_record, "vendor.name"))
                         if manufacturer_name:
                             manufacturer_name = to_pascal_case(manufacturer_name)
 
-                        manufacturer_uuid = uuid_maps.get("manufacturer", {}).get(
-                            manufacturer_name
-                        )
+                        manufacturer_uuid = uuid_maps.get("manufacturer", {}).get(manufacturer_name)
                         if not manufacturer_uuid:
                             # Create manufacturer first
                             manufacturer_uuid = get_or_create_nautobot_object(
@@ -544,9 +537,7 @@ def transform_servicedesk_to_nautobot(servicedesk_record, uuid_maps, log_rows):
                                 {
                                     "model": value,
                                     "manufacturer": {"id": manufacturer_uuid},
-                                    "slug": value.lower()
-                                    .replace(" ", "-")
-                                    .replace("/", "-")[:50],
+                                    "slug": value.lower().replace(" ", "-").replace("/", "-")[:50],
                                 },
                                 log_rows,
                             )
@@ -565,12 +556,8 @@ def transform_servicedesk_to_nautobot(servicedesk_record, uuid_maps, log_rows):
                             "name",
                             {
                                 "name": value,
-                                "status": {
-                                    "name": "Active"
-                                },  # Required field for locations
-                                "location_type": {
-                                    "name": "Site"
-                                },  # May need to be created first
+                                "status": {"name": "Active"},  # Required field for locations
+                                "location_type": {"name": "Site"},  # May need to be created first
                             },
                             log_rows,
                         )
@@ -583,9 +570,7 @@ def transform_servicedesk_to_nautobot(servicedesk_record, uuid_maps, log_rows):
                         # Don't create status - it should already exist in Nautobot
                         # Log a warning if status is not found
                         if value not in uuid_maps.get("status", {}):
-                            print(
-                                f"Warning: Status '{value}' not found in Nautobot. Using default 'active'."
-                            )
+                            print(f"Warning: Status '{value}' not found in Nautobot. Using default 'active'.")
                             if "active" in uuid_maps.get("status", {}):
                                 object_id = uuid_maps["status"]["active"]
                             else:
@@ -602,12 +587,8 @@ def transform_servicedesk_to_nautobot(servicedesk_record, uuid_maps, log_rows):
                     else:
                         # Use default if creation failed
                         default_value = NAUTOBOT_DEFAULTS.get(nb_field)
-                        if default_value and default_value in uuid_maps.get(
-                            nb_field, {}
-                        ):
-                            nautobot_device[nb_field] = {
-                                "id": uuid_maps[nb_field][default_value]
-                            }
+                        if default_value and default_value in uuid_maps.get(nb_field, {}):
+                            nautobot_device[nb_field] = {"id": uuid_maps[nb_field][default_value]}
             else:
                 # Direct field mapping
                 nautobot_device[nb_field] = value
@@ -627,9 +608,7 @@ def transform_servicedesk_to_nautobot(servicedesk_record, uuid_maps, log_rows):
             nautobot_device["name"] = hostname.strip()
         else:
             # Fallback: use service tag
-            service_tag = get_nested_value(
-                servicedesk_record, "computer_system.service_tag"
-            )
+            service_tag = get_nested_value(servicedesk_record, "computer_system.service_tag")
             if service_tag:
                 nautobot_device["name"] = service_tag
             else:
@@ -686,18 +665,14 @@ def bulk_request(method, endpoint, records, log_rows, action_label):
                             "endpoint": endpoint,
                             "action": action_label,
                             "status_code": resp.status_code,
-                            "response": (
-                                resp.text[:200] if len(resp.text) > 200 else resp.text
-                            ),
+                            "response": (resp.text[:200] if len(resp.text) > 200 else resp.text),
                         }
                     )
 
                 if resp.status_code in (200, 201):
                     print(f"✅ Bulk {action_label} {len(batch)} records")
                 else:
-                    print(
-                        f"❌ Bulk {action_label} failed - {resp.status_code}: {resp.text[:100]}"
-                    )
+                    print(f"❌ Bulk {action_label} failed - {resp.status_code}: {resp.text[:100]}")
 
             except Exception as e:
                 print(f"❌ Error in bulk {action_label}: {e}")
@@ -761,15 +736,11 @@ def create_device_interfaces(device_name, interfaces, log_rows):
                 if resp.status_code in [200, 201]:
                     interface_obj = resp.json()
                     created_interfaces.append(interface_obj)
-                    print(
-                        f"✅ Created interface {interface_data['name']} for {device_name}"
-                    )
+                    print(f"✅ Created interface {interface_data['name']} for {device_name}")
 
                     # Create IP address if we have one
                     if ip_address:
-                        create_ip_address(
-                            device_name, interface_obj["id"], ip_address, log_rows
-                        )
+                        create_ip_address(device_name, interface_obj["id"], ip_address, log_rows)
 
                     log_rows.append(
                         {
@@ -781,9 +752,7 @@ def create_device_interfaces(device_name, interfaces, log_rows):
                         }
                     )
                 else:
-                    print(
-                        f"❌ Failed to create interface {interface_data['name']}: {resp.status_code}"
-                    )
+                    print(f"❌ Failed to create interface {interface_data['name']}: {resp.status_code}")
                     log_rows.append(
                         {
                             "name": device_name,
@@ -840,9 +809,7 @@ def create_ip_address(device_name, interface_id, ip_address, log_rows):
                 )
                 return resp.json()
             else:
-                print(
-                    f"❌ Failed to create IP address {ip_address}: {resp.status_code}"
-                )
+                print(f"❌ Failed to create IP address {ip_address}: {resp.status_code}")
                 log_rows.append(
                     {
                         "name": device_name,
@@ -905,13 +872,11 @@ def set_primary_ip(device_id, device_name, interfaces, log_rows):
                             "endpoint": "/api/dcim/devices/",
                             "action": "primary_ip_set",
                             "status_code": resp.status_code,
-                            "response": f"Set primary IP",
+                            "response": "Set primary IP",
                         }
                     )
                 else:
-                    print(
-                        f"❌ Failed to set primary IP for {device_name}: {resp.status_code}"
-                    )
+                    print(f"❌ Failed to set primary IP for {device_name}: {resp.status_code}")
     except Exception as e:
         print(f"❌ Error setting primary IP for {device_name}: {e}")
         log_rows.append(
@@ -927,11 +892,9 @@ def set_primary_ip(device_id, device_name, interfaces, log_rows):
 
 def push_create_or_update(dest_endpoint, records, log_rows):
     """Create or update devices in Nautobot."""
-    print(f"🔄 Checking existing devices in Nautobot...")
+    print("🔄 Checking existing devices in Nautobot...")
 
-    existing = get_all_from_api(
-        f"{NAUTOBOT_URL}{dest_endpoint}", get_nautobot_headers()
-    )
+    existing = get_all_from_api(f"{NAUTOBOT_URL}{dest_endpoint}", get_nautobot_headers())
     existing_map = {obj[UNIQUE_FIELD]: obj["id"] for obj in existing}
 
     to_create = []
@@ -1038,9 +1001,7 @@ ENVIRONMENT SETUP:
         """,
     )
 
-    parser.add_argument(
-        "--count", type=int, help="Number of workstations to import (default: all)"
-    )
+    parser.add_argument("--count", type=int, help="Number of workstations to import (default: all)")
     parser.add_argument(
         "--servicedesk-url",
         default=SERVICEDESK_URL,
@@ -1067,17 +1028,13 @@ ENVIRONMENT SETUP:
         default=BULK_SIZE,
         help=f"Records per API call (default: {BULK_SIZE})",
     )
-    parser.add_argument(
-        "--log-file", default=LOG_CSV, help=f"Output log file (default: {LOG_CSV})"
-    )
+    parser.add_argument("--log-file", default=LOG_CSV, help=f"Output log file (default: {LOG_CSV})")
     parser.add_argument(
         "--export-file",
         default=DATA_EXPORT,
         help=f"ServiceDesk data export file (default: {DATA_EXPORT})",
     )
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Validate only, do not import data"
-    )
+    parser.add_argument("--dry-run", action="store_true", help="Validate only, do not import data")
     parser.add_argument(
         "--output-nautobot-json",
         nargs="?",
@@ -1147,13 +1104,9 @@ ENVIRONMENT SETUP:
 
         for i, workstation in enumerate(servicedesk_workstations, 1):
             try:
-                device, interfaces = transform_servicedesk_to_nautobot(
-                    workstation, uuid_maps, log_rows
-                )
+                device, interfaces = transform_servicedesk_to_nautobot(workstation, uuid_maps, log_rows)
                 nautobot_devices.append(device)
-                device_interfaces.append(
-                    (device["name"], interfaces)
-                )  # Store device name with its interfaces
+                device_interfaces.append((device["name"], interfaces))  # Store device name with its interfaces
 
                 if i % 50 == 0:
                     print(f"📝 Processed {i}/{len(servicedesk_workstations)} records")
@@ -1175,9 +1128,7 @@ ENVIRONMENT SETUP:
         # Export transformed Nautobot objects to JSON if requested
         if args.output_nautobot_json:
             # Extract just the device data for export (without interfaces)
-            devices_only = [
-                device for device, _ in zip(nautobot_devices, device_interfaces)
-            ]
+            devices_only = [device for device, _ in zip(nautobot_devices, device_interfaces)]
             export_nautobot_data(devices_only, args.output_nautobot_json)
 
             # Also show interfaces that would be created
@@ -1186,9 +1137,7 @@ ENVIRONMENT SETUP:
             for device_name, interfaces in device_interfaces:
                 print(f"\nDevice: {device_name}")
                 for interface in interfaces:
-                    print(
-                        f"  Interface: {json.dumps(interface, indent=4, default=str)}"
-                    )
+                    print(f"  Interface: {json.dumps(interface, indent=4, default=str)}")
             print("============================================================")
 
         if args.dry_run:
@@ -1224,9 +1173,7 @@ ENVIRONMENT SETUP:
         write_log(log_rows, args.log_file)
 
         # Summary statistics
-        success_count = sum(
-            1 for log in log_rows if str(log["status_code"]).startswith("2")
-        )
+        success_count = sum(1 for log in log_rows if str(log["status_code"]).startswith("2"))
         error_count = len(log_rows) - success_count
 
         print("")

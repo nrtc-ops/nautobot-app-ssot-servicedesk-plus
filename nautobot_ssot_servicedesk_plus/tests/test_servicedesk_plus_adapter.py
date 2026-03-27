@@ -40,70 +40,114 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
         self.adapter.load()
         self.client.get_workstations.assert_called_once()
 
-    def test_load_device_count(self):
-        """Verify correct number of devices loaded (duplicates and empty names excluded)."""
-        self.adapter.load()
-        devices = self.adapter.get_all("device")
-        # 10 fixtures: 1006 gets name from service_tag, 1008 is duplicate of 1007 (same UDF hostname) = 9
-        self.assertEqual(len(devices), 9)
+    # -- Device name: {name}.{hostname} --
 
-    def test_udf_hostname_preferred_over_name(self):
-        """Verify UDF hostname field is used as device name when available."""
+    def test_device_name_combines_name_and_hostname(self):
+        """Verify device name is {SDP name}.{UDF hostname} when both exist."""
         self.adapter.load()
         device_names = {d.name for d in self.adapter.get_all("device")}
-        # Device 1001 has UDF hostname "ws-okc-desk01.nrtc.coop", not "DESKTOP-ABC123"
-        self.assertIn("ws-okc-desk01.nrtc.coop", device_names)
-        self.assertNotIn("DESKTOP-ABC123", device_names)
+        # Device 1001: name="DESKTOP-ABC123", hostname="ws-okc-desk01.nrtc.coop"
+        self.assertIn("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop", device_names)
 
-    def test_service_tag_fallback_for_name(self):
-        """Verify service_tag is used as name when UDF hostname and name are empty."""
+    def test_device_name_sdp_name_only_when_no_hostname(self):
+        """Verify SDP name alone is used when no UDF hostname."""
         self.adapter.load()
         device_names = {d.name for d in self.adapter.get_all("device")}
-        # Device 1006: empty name, empty UDF, but has service_tag SVCTAG006
+        # Device 1004: name="HP-SPARE-01", no UDF hostname
+        self.assertIn("HP-SPARE-01", device_names)
+
+    def test_device_name_fallback_to_service_tag(self):
+        """Verify service_tag is used when both name and hostname are empty."""
+        self.adapter.load()
+        device_names = {d.name for d in self.adapter.get_all("device")}
+        # Device 1006: empty name, empty UDF, has service_tag SVCTAG006
         self.assertIn("SVCTAG006", device_names)
 
-    def test_duplicate_hostname_skipped(self):
-        """Verify second device with same UDF hostname is skipped."""
+    def test_load_device_count(self):
+        """Verify correct number of devices loaded (duplicates excluded)."""
         self.adapter.load()
         devices = self.adapter.get_all("device")
-        dupe_devices = [d for d in devices if d.name == "dupe-host.nrtc.coop"]
-        self.assertEqual(len(dupe_devices), 1)
+        # 12 fixtures, all unique combined names
+        self.assertEqual(len(devices), 12)
+
+    def test_duplicate_combined_name_skipped(self):
+        """Verify second device with identical combined name is skipped."""
+        # Manually create a fixture with truly duplicate combined names
+        dupes = [
+            {
+                "id": "2001",
+                "name": "SAME",
+                "udf_fields": {"udf_sline_14115": "host.nrtc.coop"},
+                "computer_system": {"service_tag": "TAG1"},
+                "vendor": {"name": "DELL"},
+                "state": {"name": "In Use"},
+            },
+            {
+                "id": "2002",
+                "name": "SAME",
+                "udf_fields": {"udf_sline_14115": "host.nrtc.coop"},
+                "computer_system": {"service_tag": "TAG2"},
+                "vendor": {"name": "DELL"},
+                "state": {"name": "In Use"},
+            },
+        ]
+        self.client.get_workstations.return_value = dupes
+        adapter = ServicedeskPlusRemoteAdapter(job=self.job, sync=None, client=self.client)
+        adapter.load()
+        devices = adapter.get_all("device")
+        self.assertEqual(len(devices), 1)
+        self.assertEqual(devices[0].name, "SAME.host.nrtc.coop")
+
+    # -- Serial: SDP name → service_tag fallback --
+
+    def test_serial_from_sdp_name(self):
+        """Verify serial is populated from SDP name field."""
+        self.adapter.load()
+        device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
+        self.assertEqual(device.serial, "DESKTOP-ABC123")
+
+    def test_serial_fallback_to_service_tag(self):
+        """Verify serial falls back to service_tag when name is empty."""
+        self.adapter.load()
+        device = self._get_device("SVCTAG006")
+        self.assertEqual(device.serial, "SVCTAG006")
+
+    # -- Status mappings --
 
     def test_status_mapping_in_use(self):
         """Verify 'In Use' maps to 'Active'."""
         self.adapter.load()
-        device = self._get_device("ws-okc-desk01.nrtc.coop")
+        device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
         self.assertEqual(device.status__name, "Active")
 
     def test_status_mapping_deployed(self):
         """Verify 'Deployed' maps to 'Active'."""
         self.adapter.load()
-        device = self._get_device("lt-tulsa-tech01.nrtc.coop")
+        device = self._get_device("LAPTOP-XYZ789.lt-tulsa-tech01.nrtc.coop")
         self.assertEqual(device.status__name, "Active")
 
     def test_status_mapping_in_store(self):
         """Verify 'In Store' maps to 'Inventory'."""
         self.adapter.load()
-        # Device 1004: no UDF hostname, falls back to service_tag "HPSVCTAG01"
-        device = self._get_device("HPSVCTAG01")
+        device = self._get_device("HP-SPARE-01")
         self.assertEqual(device.status__name, "Inventory")
 
     def test_status_mapping_retired(self):
         """Verify 'Retired' maps to 'Decommissioning'."""
         self.adapter.load()
-        device = self._get_device("srv-old-retire.nrtc.coop")
+        device = self._get_device("OLD-SERVER-RETIRE.srv-old-retire.nrtc.coop")
         self.assertEqual(device.status__name, "Decommissioning")
 
     def test_status_mapping_maintenance(self):
         """Verify 'Maintenance' maps to 'Planned'."""
         self.adapter.load()
-        device = self._get_device("sw-okc-maint01.nrtc.coop")
+        device = self._get_device("MAINT-SWITCH.sw-okc-maint01.nrtc.coop")
         self.assertEqual(device.status__name, "Planned")
 
     def test_status_mapping_faulty(self):
         """Verify 'Faulty' maps to 'Failed'."""
         self.adapter.load()
-        device = self._get_device("ws-faulty01.nrtc.coop")
+        device = self._get_device("FAULTY-WS.ws-faulty01.nrtc.coop")
         self.assertEqual(device.status__name, "Failed")
 
     def test_default_status_when_state_missing(self):
@@ -112,12 +156,13 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
         device = self._get_device("SVCTAG006")
         self.assertEqual(device.status__name, "Active")
 
+    # -- Manufacturer --
+
     def test_manufacturer_title_cased(self):
         """Verify manufacturer names are title-cased."""
         self.adapter.load()
         manufacturers = self.adapter.get_all("manufacturer")
         mfr_names = {m.name for m in manufacturers}
-        # "DELL" -> "Dell", "HP" -> "Hp", "LENOVO" -> "Lenovo"
         self.assertIn("Dell", mfr_names)
         self.assertIn("Hp", mfr_names)
         self.assertIn("Lenovo", mfr_names)
@@ -127,40 +172,55 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
         self.adapter.load()
         manufacturers = self.adapter.get_all("manufacturer")
         mfr_names = [m.name for m in manufacturers]
-        # "Dell" appears in many fixtures but should only be added once
         self.assertEqual(mfr_names.count("Dell"), 1)
+
+    def test_generic_manufacturer_when_vendor_missing(self):
+        """Verify 'Generic' manufacturer when vendor is null."""
+        self.adapter.load()
+        manufacturers = self.adapter.get_all("manufacturer")
+        mfr_names = {m.name for m in manufacturers}
+        self.assertIn("Generic", mfr_names)
+
+    # -- Device type --
 
     def test_device_type_udf_preferred(self):
         """Verify UDF device type field is preferred over computer_system.model."""
         self.adapter.load()
-        device = self._get_device("ws-okc-desk01.nrtc.coop")
-        # UDF field has "OptiPlex 7090 SFF", computer_system.model has "OptiPlex 7090"
+        device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
         self.assertEqual(device.device_type__model, "OptiPlex 7090 SFF")
 
     def test_device_type_fallback_to_model(self):
         """Verify computer_system.model is used when UDF device type is missing."""
         self.adapter.load()
-        device = self._get_device("sw-okc-maint01.nrtc.coop")
-        # Device 1009 has no udf_sline_14122 but has computer_system.model = null
-        # Both missing, should fall back to "Generic Device"
+        device = self._get_device("MAINT-SWITCH.sw-okc-maint01.nrtc.coop")
+        # No udf_sline_14122, model is null → "Generic Device"
         self.assertEqual(device.device_type__model, "Generic Device")
+
+    def test_device_type_deduplication(self):
+        """Verify device types are deduplicated."""
+        self.adapter.load()
+        device_types = self.adapter.get_all("device_type")
+        dt_models = [dt.model for dt in device_types]
+        self.assertEqual(dt_models.count("ThinkCentre M920"), 1)
+
+    # -- Location --
 
     def test_location_from_dict(self):
         """Verify location extracted from dict format."""
         self.adapter.load()
-        device = self._get_device("ws-okc-desk01.nrtc.coop")
+        device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
         self.assertEqual(device.location__name, "Oklahoma City")
 
     def test_location_from_string(self):
         """Verify location extracted from plain string format."""
         self.adapter.load()
-        device = self._get_device("HPSVCTAG01")
+        device = self._get_device("HP-SPARE-01")
         self.assertEqual(device.location__name, "Norman Warehouse")
 
     def test_location_invalid_string_defaults(self):
         """Verify invalid location strings (like '-') fall back to default."""
         self.adapter.load()
-        device = self._get_device("ws-faulty01.nrtc.coop")
+        device = self._get_device("FAULTY-WS.ws-faulty01.nrtc.coop")
         self.assertEqual(device.location__name, "Default Location")
 
     def test_location_deduplication(self):
@@ -168,13 +228,14 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
         self.adapter.load()
         locations = self.adapter.get_all("location")
         loc_names = [loc.name for loc in locations]
-        # "Oklahoma City" appears in many fixtures but should only be added once
         self.assertEqual(loc_names.count("Oklahoma City"), 1)
+
+    # -- Tenant --
 
     def test_tenant_from_site(self):
         """Verify tenant is mapped from ServiceDesk site."""
         self.adapter.load()
-        device = self._get_device("ws-okc-desk01.nrtc.coop")
+        device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
         self.assertEqual(device.tenant__name, "NRTC HQ")
 
     def test_tenant_none_when_site_missing(self):
@@ -183,28 +244,38 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
         device = self._get_device("SVCTAG006")
         self.assertIsNone(device.tenant__name)
 
-    def test_serial_from_service_tag(self):
-        """Verify serial is populated from service_tag."""
+    def test_tenant_inferred_from_hostname_when_common_site(self):
+        """Verify tenant is inferred from hostname domain when site is 'Common Site'."""
         self.adapter.load()
-        device = self._get_device("ws-okc-desk01.nrtc.coop")
-        self.assertEqual(device.serial, "SVCTAG001")
+        # Device 1011: site="Common Site", hostname="rad0.comporium.net" → "Comporium"
+        device = self._get_device("rad0.rad0.comporium.net")
+        self.assertEqual(device.tenant__name, "Comporium")
+
+    def test_tenant_falls_back_to_common_site_when_no_hostname(self):
+        """Verify 'Common Site' is kept when hostname is unavailable for inference."""
+        self.adapter.load()
+        # Device 1012: site="Common Site", no UDF hostname
+        device = self._get_device("srv-common-nohostname")
+        self.assertEqual(device.tenant__name, "Common Site")
+
+    # -- Asset tag / comments / role --
 
     def test_asset_tag(self):
         """Verify asset_tag is populated."""
         self.adapter.load()
-        device = self._get_device("ws-okc-desk01.nrtc.coop")
+        device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
         self.assertEqual(device.asset_tag, "NRTC-0001")
 
     def test_null_asset_tag(self):
         """Verify null asset_tag is stored as None."""
         self.adapter.load()
-        device = self._get_device("HPSVCTAG01")
+        device = self._get_device("HP-SPARE-01")
         self.assertIsNone(device.asset_tag)
 
     def test_comments(self):
         """Verify description maps to comments."""
         self.adapter.load()
-        device = self._get_device("ws-okc-desk01.nrtc.coop")
+        device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
         self.assertEqual(device.comments, "Main office workstation")
 
     def test_default_role(self):
@@ -213,22 +284,28 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
         for device in self.adapter.get_all("device"):
             self.assertEqual(device.role__name, "NUS")
 
-    def test_generic_manufacturer_when_vendor_missing(self):
-        """Verify 'Generic' manufacturer when vendor is null."""
-        self.adapter.load()
-        device = self._get_device("SVCTAG006")
-        self.assertEqual(device.device_type__model, "Generic Device")
-        manufacturers = self.adapter.get_all("manufacturer")
-        mfr_names = {m.name for m in manufacturers}
-        self.assertIn("Generic", mfr_names)
+    # -- Power type --
 
-    def test_device_type_deduplication(self):
-        """Verify device types are deduplicated."""
+    def test_power_type_from_udf_field(self):
+        """Verify power type extracted from UDF power supply field."""
         self.adapter.load()
-        device_types = self.adapter.get_all("device_type")
-        dt_models = [dt.model for dt in device_types]
-        # "ThinkCentre M920" appears in both 1007 and 1008 but should only be added once
-        self.assertEqual(dt_models.count("ThinkCentre M920"), 1)
+        device = self._get_device("SRV-DB-PROD.srv-db-prod01.nrtc.coop")
+        self.assertEqual(device.power_type, "AC")
+
+    def test_power_type_parsed_from_model(self):
+        """Verify power type parsed from model string when UDF field is absent."""
+        self.adapter.load()
+        # Device 1005: model="PowerEdge R340 (DC)", no udf_pick_8415
+        device = self._get_device("OLD-SERVER-RETIRE.srv-old-retire.nrtc.coop")
+        self.assertEqual(device.power_type, "DC")
+
+    def test_power_type_none_when_unavailable(self):
+        """Verify power type is None when not in UDF or model string."""
+        self.adapter.load()
+        device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
+        self.assertIsNone(device.power_type)
+
+    # -- Helper --
 
     def _get_device(self, name):
         """Helper to get a device by name from the adapter."""

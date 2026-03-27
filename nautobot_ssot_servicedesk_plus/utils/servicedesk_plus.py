@@ -19,6 +19,9 @@ STATUS_MAPPINGS = {
     "Retired": "Decommissioning",
     "Faulty": "Failed",
     "Returned": "Inventory",
+    "Expired": "End-of-Life",
+    "Staging": "Staged",
+    "To Be Returned": "Inventory",
 }
 
 # Default values for required Nautobot fields
@@ -71,11 +74,12 @@ class ServiceDeskPlusClient:
         self.session.headers.update({"authtoken": self.token})
         self.session.verify = self.verify_ssl
 
-    def get_workstations(self, page_size=100):
-        """Fetch all workstations from ServiceDesk Plus with automatic pagination.
+    def get_workstations(self, page_size=100, product_type="Server"):
+        """Fetch workstations from ServiceDesk Plus with automatic pagination.
 
         Args:
             page_size: Number of records per API request (max 100).
+            product_type: Filter by product type name (e.g., "Server"). None to fetch all.
 
         Returns:
             List of workstation dictionaries from the ServiceDesk Plus API.
@@ -84,16 +88,22 @@ class ServiceDeskPlusClient:
         start_index = 0
 
         while True:
-            input_data = {
-                "list_info": {
-                    "row_count": page_size,
-                    "start_index": start_index,
-                    "sort_field": "id",
-                    "sort_order": "asc",
-                    "get_total_count": True,
-                }
+            list_info = {
+                "row_count": page_size,
+                "start_index": start_index,
+                "sort_field": "id",
+                "sort_order": "asc",
+                "get_total_count": True,
             }
 
+            if product_type:
+                list_info["search_criteria"] = {
+                    "field": "product_type.name",
+                    "condition": "is",
+                    "value": product_type,
+                }
+
+            input_data = {"list_info": list_info}
             params = {"input_data": json.dumps(input_data)}
             url = f"{self.url}/api/v3/workstations"
 
@@ -113,13 +123,13 @@ class ServiceDeskPlusClient:
 
             all_workstations.extend(workstations)
 
-            list_info = data.get("list_info", {})
-            has_more = list_info.get("has_more_rows", False)
+            resp_list_info = data.get("list_info", {})
+            has_more = resp_list_info.get("has_more_rows", False)
 
             if not has_more:
                 break
 
             start_index += len(workstations)
 
-        logger.info("Fetched %d workstations from ServiceDesk Plus", len(all_workstations))
+        logger.info("Fetched %d workstations (product_type=%s) from ServiceDesk Plus", len(all_workstations), product_type)
         return all_workstations

@@ -1,10 +1,10 @@
 """DiffSync models for nautobot_ssot_servicedesk_plus."""
 
-from typing import Optional
+from typing import Annotated, Optional
 
 from nautobot.dcim.models import Device, DeviceType, Location, Manufacturer
 from nautobot.tenancy.models import Tenant
-from nautobot_ssot.contrib import NautobotModel
+from nautobot_ssot.contrib import CustomFieldAnnotation, NautobotModel
 
 
 class ManufacturerSSoTModel(NautobotModel):
@@ -69,6 +69,7 @@ class DeviceSSoTModel(NautobotModel):
         "device_type__model",
         "location__name",
         "tenant__name",
+        "power_type",
     )
 
     name: str
@@ -80,3 +81,4 @@ class DeviceSSoTModel(NautobotModel):
     device_type__model: Optional[str] = None
     location__name: Optional[str] = None
     tenant__name: Optional[str] = None
+    power_type: Annotated[Optional[str], CustomFieldAnnotation(key="power_type")] = None
