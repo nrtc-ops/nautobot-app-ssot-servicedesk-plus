@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nautobot-ssot-servicedesk-plus"
-version = "0.1.0a0"
+version = "0.1.0"
 description = "Nautobot SSOT ServiceDesk Plus"
 authors = ["NRTC DSO <devsecops@nrtc.coop>"]
 license = "Apache-2.0"
@@ -11,7 +11,7 @@ documentation = "https://docs.nrtc.cloud/projects/nautobot-ssot-servicedesk-plus
 keywords = ["nautobot", "nautobot-app", "nautobot-plugin"]
 classifiers = [
     "Intended Audience :: Developers",
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
