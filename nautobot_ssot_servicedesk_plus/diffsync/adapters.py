@@ -168,7 +168,7 @@ class ServicedeskPlusRemoteAdapter(Adapter):  # pylint: disable=too-few-public-m
         Returns:
             dict: Dict with keys: name, serial, asset_tag, comments, status_name, role_name,
                 manufacturer_name, device_type_model, location_name, tenant_name,
-                power_type, idrac_ip, idrac_op_id, primary_ip.
+                power_type, idrac_ip, idrac_op_id, servicedesk_plus_id, primary_ip.
         """
         name = self._extract_device_name(workstation)
         serial = self._extract_serial(workstation)
@@ -200,6 +200,7 @@ class ServicedeskPlusRemoteAdapter(Adapter):  # pylint: disable=too-few-public-m
             "power_type": self._extract_power_type(workstation),
             "idrac_ip": get_nested_value(workstation, "udf_fields.udf_sline_14127"),
             "idrac_op_id": get_nested_value(workstation, "udf_fields.udf_sline_14128"),
+            "servicedesk_plus_id": str(workstation.get("id", "")) or None,
             "primary_ip": self._extract_primary_ip(workstation),
         }
 
@@ -279,6 +280,7 @@ class ServicedeskPlusRemoteAdapter(Adapter):  # pylint: disable=too-few-public-m
                     power_type=fields["power_type"],
                     idrac_ip=fields["idrac_ip"],
                     idrac_op_id=fields["idrac_op_id"],
+                    servicedesk_plus_id=fields["servicedesk_plus_id"],
                 )
             )
 
