@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nautobot-ssot-servicedesk-plus"
-version = "0.1.0a0"
+version = "0.1.0"
 description = "Nautobot SSOT ServiceDesk Plus"
 authors = ["NRTC DSO <devsecops@nrtc.coop>"]
 license = "Apache-2.0"
@@ -163,7 +163,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.towncrier]
 package = "nautobot_ssot_servicedesk_plus"
 directory = "changes"
-filename = "docs/admin/release_notes/version_X.Y.md"
+filename = "docs/admin/release_notes/version_0.1.md"
 template = "development/towncrier_template.j2"
 start_string = "<!-- towncrier release notes start -->"
 issue_format = "[#{issue}](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/issues/{issue})"
