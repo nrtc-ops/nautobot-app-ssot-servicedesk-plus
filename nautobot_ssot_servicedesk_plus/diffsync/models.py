@@ -2,9 +2,13 @@
 
 from typing import Annotated, Optional
 
+from diffsync.enum import DiffSyncModelFlags
 from nautobot.dcim.models import Device, DeviceType, Interface, Location, Manufacturer
+from nautobot.extras.models import MetadataType
 from nautobot.tenancy.models import Tenant
 from nautobot_ssot.contrib import CustomFieldAnnotation, NautobotModel
+
+SDP_METADATA_NAME = "Last sync from ServiceDesk Plus"
 
 
 class ManufacturerSSoTModel(NautobotModel):
@@ -14,6 +18,7 @@ class ManufacturerSSoTModel(NautobotModel):
     _modelname = "manufacturer"
     _identifiers = ("name",)
     _attributes = ()
+    model_flags: DiffSyncModelFlags = DiffSyncModelFlags.SKIP_UNMATCHED_DST
 
     name: str
 
@@ -25,6 +30,7 @@ class DeviceTypeSSoTModel(NautobotModel):
     _modelname = "device_type"
     _identifiers = ("model",)
     _attributes = ("manufacturer__name",)
+    model_flags: DiffSyncModelFlags = DiffSyncModelFlags.SKIP_UNMATCHED_DST
 
     model: str
     manufacturer__name: Optional[str] = None
@@ -37,6 +43,7 @@ class LocationSSoTModel(NautobotModel):
     _modelname = "location"
     _identifiers = ("name", "location_type__name")
     _attributes = ("status__name",)
+    model_flags: DiffSyncModelFlags = DiffSyncModelFlags.SKIP_UNMATCHED_DST
 
     name: str
     location_type__name: Optional[str] = "Site"
@@ -50,6 +57,7 @@ class TenantSSoTModel(NautobotModel):
     _modelname = "tenant"
     _identifiers = ("name",)
     _attributes = ()
+    model_flags: DiffSyncModelFlags = DiffSyncModelFlags.SKIP_UNMATCHED_DST
 
     name: str
 
@@ -72,6 +80,7 @@ class DeviceSSoTModel(NautobotModel):
         "power_type",
         "idrac_ip",
         "idrac_op_id",
+        "servicedesk_plus_id",
     )
 
     name: str
@@ -86,6 +95,16 @@ class DeviceSSoTModel(NautobotModel):
     power_type: Annotated[Optional[str], CustomFieldAnnotation(key="power_type")] = None
     idrac_ip: Annotated[Optional[str], CustomFieldAnnotation(key="idrac_ip")] = None
     idrac_op_id: Annotated[Optional[str], CustomFieldAnnotation(key="idrac_op_id")] = None
+    servicedesk_plus_id: Annotated[Optional[str], CustomFieldAnnotation(key="servicedesk_plus_id")] = None
+
+    @classmethod
+    def get_queryset(cls):
+        """Only load devices managed by the ServiceDesk Plus SSoT sync."""
+        try:
+            mt = MetadataType.objects.get(name=SDP_METADATA_NAME)
+            return cls._model.objects.filter(associated_object_metadata__metadata_type=mt)
+        except MetadataType.DoesNotExist:
+            return cls._model.objects.none()
 
 
 class InterfaceSSoTModel(NautobotModel):
@@ -100,3 +119,12 @@ class InterfaceSSoTModel(NautobotModel):
     device__name: str
     type: str = "other"
     status__name: Optional[str] = "Active"
+
+    @classmethod
+    def get_queryset(cls):
+        """Only load interfaces managed by the ServiceDesk Plus SSoT sync."""
+        try:
+            mt = MetadataType.objects.get(name=SDP_METADATA_NAME)
+            return cls._model.objects.filter(associated_object_metadata__metadata_type=mt)
+        except MetadataType.DoesNotExist:
+            return cls._model.objects.none()
