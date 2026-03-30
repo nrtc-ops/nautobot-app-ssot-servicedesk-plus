@@ -65,7 +65,7 @@ class ServiceDeskPlusClient:  # pylint: disable=too-few-public-methods
     Handles authentication, pagination, and data retrieval for workstation assets.
     """
 
-    def __init__(self, url, token, verify_ssl=true):
+    def __init__(self, url, token, verify_ssl=True):
         """Initialize the ServiceDesk Plus client.
 
         Args:
