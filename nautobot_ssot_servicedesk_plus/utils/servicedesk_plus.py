@@ -65,7 +65,7 @@ class ServiceDeskPlusClient:
     Handles authentication, pagination, and data retrieval for workstation assets.
     """
 
-    def __init__(self, url, token, verify_ssl=False):
+    def __init__(self, url, token, verify_ssl=true):
         """Initialize the ServiceDesk Plus client.
 
         Args:
