@@ -1,0 +1,1 @@
+Fixed queryset filters for returning proper data from Nautobot and delete protection for fields that only need adds, finally a servicedesk entity id custom field in NB

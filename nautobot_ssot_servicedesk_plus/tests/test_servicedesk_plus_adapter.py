@@ -369,6 +369,20 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):  # pylint: disable=
         device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
         self.assertIsNone(device.idrac_op_id)
 
+    # -- ServiceDesk Plus ID --
+
+    def test_servicedesk_plus_id(self):
+        """Verify ServiceDesk Plus entity ID is captured."""
+        self.adapter.load()
+        device = self._get_device("DESKTOP-ABC123.ws-okc-desk01.nrtc.coop")
+        self.assertEqual(device.servicedesk_plus_id, "1001")
+
+    def test_servicedesk_plus_id_all_devices(self):
+        """Verify all devices have a servicedesk_plus_id set."""
+        self.adapter.load()
+        for device in self.adapter.get_all("device"):
+            self.assertIsNotNone(device.servicedesk_plus_id)
+
     # -- Primary IP / Interface --
 
     def test_primary_ip_extracted(self):
