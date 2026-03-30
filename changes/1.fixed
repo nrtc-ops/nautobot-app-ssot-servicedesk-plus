@@ -1,0 +1,1 @@
+Fixed pylint violations (R0914, R0915, R0903, R0904, R1721) by refactoring `load()` into helper methods and suppressing framework-driven false positives.
