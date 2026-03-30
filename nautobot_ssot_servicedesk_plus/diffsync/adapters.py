@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 INTERFACE_NAME = "em1_bond0"
 
 
-class ServicedeskPlusRemoteAdapter(Adapter):
+class ServicedeskPlusRemoteAdapter(Adapter):  # pylint: disable=too-few-public-methods
     """DiffSync adapter for loading data from ServiceDesk Plus."""
 
     manufacturer = ManufacturerSSoTModel
@@ -159,119 +159,130 @@ class ServicedeskPlusRemoteAdapter(Adapter):
                 return ip
         return None
 
+    def _extract_device_fields(self, workstation):
+        """Extract and transform all device-related fields from a workstation.
+
+        Args:
+            workstation: Workstation dict from the ServiceDesk Plus API.
+
+        Returns:
+            dict: Dict with keys: name, serial, asset_tag, comments, status_name, role_name,
+                manufacturer_name, device_type_model, location_name, tenant_name,
+                power_type, idrac_ip, idrac_op_id, primary_ip.
+        """
+        name = self._extract_device_name(workstation)
+        serial = self._extract_serial(workstation)
+        comments = get_nested_value(workstation, "description") or ""
+
+        raw_status = get_nested_value(workstation, "state.name")
+        status_name = STATUS_MAPPINGS.get(raw_status, DEFAULT_STATUS) if raw_status else DEFAULT_STATUS
+
+        manufacturer_name = get_nested_value(workstation, "vendor.name")
+        manufacturer_name = manufacturer_name.title() if manufacturer_name else "Generic"
+
+        device_type_model = get_nested_value(workstation, "udf_fields.udf_sline_14122")
+        if not device_type_model:
+            device_type_model = get_nested_value(workstation, "computer_system.model")
+        if not device_type_model:
+            device_type_model = "Generic Device"
+
+        return {
+            "name": name,
+            "serial": serial,
+            "asset_tag": get_nested_value(workstation, "asset_tag") or None,
+            "comments": comments,
+            "status_name": status_name,
+            "role_name": DEFAULT_ROLE,
+            "manufacturer_name": manufacturer_name,
+            "device_type_model": device_type_model,
+            "location_name": self._extract_location_name(workstation) or "Default Location",
+            "tenant_name": self._extract_tenant_name(workstation),
+            "power_type": self._extract_power_type(workstation),
+            "idrac_ip": get_nested_value(workstation, "udf_fields.udf_sline_14127"),
+            "idrac_op_id": get_nested_value(workstation, "udf_fields.udf_sline_14128"),
+            "primary_ip": self._extract_primary_ip(workstation),
+        }
+
+    def _add_related_objects(self, fields, seen):
+        """Add deduplicated related objects (manufacturer, device_type, location, tenant).
+
+        Args:
+            fields: Dict of extracted device fields.
+            seen: Dict of sets tracking already-added objects.
+        """
+        if fields["manufacturer_name"] not in seen["manufacturers"]:
+            self.add(ManufacturerSSoTModel(name=fields["manufacturer_name"]))
+            seen["manufacturers"].add(fields["manufacturer_name"])
+
+        if fields["device_type_model"] not in seen["device_types"]:
+            self.add(
+                DeviceTypeSSoTModel(
+                    model=fields["device_type_model"],
+                    manufacturer__name=fields["manufacturer_name"],
+                )
+            )
+            seen["device_types"].add(fields["device_type_model"])
+
+        if fields["location_name"] not in seen["locations"]:
+            self.add(
+                LocationSSoTModel(
+                    name=fields["location_name"],
+                    location_type__name=DEFAULT_LOCATION_TYPE,
+                    status__name="Active",
+                )
+            )
+            seen["locations"].add(fields["location_name"])
+
+        if fields["tenant_name"] and fields["tenant_name"] not in seen["tenants"]:
+            self.add(TenantSSoTModel(name=fields["tenant_name"]))
+            seen["tenants"].add(fields["tenant_name"])
+
     def load(self):
         """Load data from ServiceDesk Plus into DiffSync models."""
         workstations = self.client.get_workstations()
         self.job.logger.info("Loading %d workstations from ServiceDesk Plus", len(workstations))
 
-        # Track unique related objects to avoid duplicate adds
-        seen_manufacturers = set()
-        seen_device_types = set()
-        seen_locations = set()
-        seen_tenants = set()
-        seen_devices = set()
+        seen = {
+            "manufacturers": set(),
+            "device_types": set(),
+            "locations": set(),
+            "tenants": set(),
+            "devices": set(),
+        }
 
         for workstation in workstations:
-            name = self._extract_device_name(workstation)
-            if not name or name in seen_devices:
-                if name in seen_devices:
+            fields = self._extract_device_fields(workstation)
+            name = fields["name"]
+
+            if not name or name in seen["devices"]:
+                if name in seen["devices"]:
                     self.job.logger.warning("Skipping duplicate device name: %s", name)
                 continue
-            seen_devices.add(name)
+            seen["devices"].add(name)
 
-            # -- Extract and transform fields --
+            if fields["primary_ip"]:
+                self.device_primary_ips[name] = fields["primary_ip"]
 
-            serial = self._extract_serial(workstation)
-            asset_tag = get_nested_value(workstation, "asset_tag")
-            comments = get_nested_value(workstation, "description") or ""
-
-            # Status: map ServiceDesk state to Nautobot status
-            raw_status = get_nested_value(workstation, "state.name")
-            status_name = STATUS_MAPPINGS.get(raw_status, DEFAULT_STATUS) if raw_status else DEFAULT_STATUS
-
-            # Role: all ServiceDesk devices get the default role
-            role_name = DEFAULT_ROLE
-
-            # Manufacturer: from vendor name, title-cased
-            manufacturer_name = get_nested_value(workstation, "vendor.name")
-            manufacturer_name = manufacturer_name.title() if manufacturer_name else "Generic"
-
-            # Device type: prefer UDF model field, fall back to computer_system.model
-            device_type_model = get_nested_value(workstation, "udf_fields.udf_sline_14122")
-            if not device_type_model:
-                device_type_model = get_nested_value(workstation, "computer_system.model")
-            if not device_type_model:
-                device_type_model = "Generic Device"
-
-            # Location
-            location_name = self._extract_location_name(workstation) or "Default Location"
-
-            # Tenant: mapped from ServiceDesk site, with Common Site inference
-            tenant_name = self._extract_tenant_name(workstation)
-
-            # Power type: UDF field first, then parse from model
-            power_type = self._extract_power_type(workstation)
-
-            # iDRAC IP and OP ID
-            idrac_ip = get_nested_value(workstation, "udf_fields.udf_sline_14127")
-            idrac_op_id = get_nested_value(workstation, "udf_fields.udf_sline_14128")
-
-            # Primary IP (for post-sync interface/IP assignment)
-            primary_ip = self._extract_primary_ip(workstation)
-            if primary_ip:
-                self.device_primary_ips[name] = primary_ip
-
-            # -- Add related objects (deduplicated) --
-
-            if manufacturer_name not in seen_manufacturers:
-                self.add(ManufacturerSSoTModel(name=manufacturer_name))
-                seen_manufacturers.add(manufacturer_name)
-
-            if device_type_model not in seen_device_types:
-                self.add(
-                    DeviceTypeSSoTModel(
-                        model=device_type_model,
-                        manufacturer__name=manufacturer_name,
-                    )
-                )
-                seen_device_types.add(device_type_model)
-
-            if location_name not in seen_locations:
-                self.add(
-                    LocationSSoTModel(
-                        name=location_name,
-                        location_type__name=DEFAULT_LOCATION_TYPE,
-                        status__name="Active",
-                    )
-                )
-                seen_locations.add(location_name)
-
-            if tenant_name and tenant_name not in seen_tenants:
-                self.add(TenantSSoTModel(name=tenant_name))
-                seen_tenants.add(tenant_name)
-
-            # -- Add device --
+            self._add_related_objects(fields, seen)
 
             self.add(
                 DeviceSSoTModel(
                     name=name,
-                    serial=serial,
-                    asset_tag=asset_tag if asset_tag else None,
-                    comments=comments,
-                    status__name=status_name,
-                    role__name=role_name,
-                    device_type__model=device_type_model,
-                    location__name=location_name,
-                    tenant__name=tenant_name,
-                    power_type=power_type,
-                    idrac_ip=idrac_ip,
-                    idrac_op_id=idrac_op_id,
+                    serial=fields["serial"],
+                    asset_tag=fields["asset_tag"],
+                    comments=fields["comments"],
+                    status__name=fields["status_name"],
+                    role__name=fields["role_name"],
+                    device_type__model=fields["device_type_model"],
+                    location__name=fields["location_name"],
+                    tenant__name=fields["tenant_name"],
+                    power_type=fields["power_type"],
+                    idrac_ip=fields["idrac_ip"],
+                    idrac_op_id=fields["idrac_op_id"],
                 )
             )
 
-            # -- Add interface for devices with an IP --
-
-            if primary_ip:
+            if fields["primary_ip"]:
                 self.add(
                     InterfaceSSoTModel(
                         name=INTERFACE_NAME,
@@ -283,16 +294,16 @@ class ServicedeskPlusRemoteAdapter(Adapter):
 
         self.job.logger.info(
             "Loaded %d devices, %d with IPs, %d manufacturers, %d device types, %d locations, %d tenants",
-            len(seen_devices),
+            len(seen["devices"]),
             len(self.device_primary_ips),
-            len(seen_manufacturers),
-            len(seen_device_types),
-            len(seen_locations),
-            len(seen_tenants),
+            len(seen["manufacturers"]),
+            len(seen["device_types"]),
+            len(seen["locations"]),
+            len(seen["tenants"]),
         )
 
 
-class ServicedeskPlusNautobotAdapter(NautobotAdapter):
+class ServicedeskPlusNautobotAdapter(NautobotAdapter):  # pylint: disable=too-few-public-methods
     """DiffSync adapter for loading data from Nautobot."""
 
     manufacturer = ManufacturerSSoTModel

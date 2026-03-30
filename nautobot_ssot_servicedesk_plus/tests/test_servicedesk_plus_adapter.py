@@ -21,7 +21,7 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 WORKSTATION_FIXTURE = load_json(FIXTURES_DIR / "get_devices.json")
 
 
-class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
+class TestServicedeskPlusRemoteAdapter(TransactionTestCase):  # pylint: disable=too-many-public-methods
     """Test ServicedeskPlusRemoteAdapter class."""
 
     databases = ("default", "job_logs")
@@ -246,7 +246,7 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
         self.client.get_workstations.return_value = fixture
         adapter = ServicedeskPlusRemoteAdapter(job=self.job, sync=None, client=self.client)
         adapter.load()
-        device = [d for d in adapter.get_all("device")][0]
+        device = list(adapter.get_all("device"))[0]
         self.assertEqual(device.location__name, "HSV")
 
     def test_location_mapping_huntsville_no_comma(self):
@@ -265,7 +265,7 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):
         self.client.get_workstations.return_value = fixture
         adapter = ServicedeskPlusRemoteAdapter(job=self.job, sync=None, client=self.client)
         adapter.load()
-        device = [d for d in adapter.get_all("device")][0]
+        device = list(adapter.get_all("device"))[0]
         self.assertEqual(device.location__name, "HSV")
 
     # -- Tenant --
