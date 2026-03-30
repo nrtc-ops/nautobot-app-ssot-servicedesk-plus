@@ -2,17 +2,9 @@
 
 An app for [Nautobot](https://github.com/nautobot/nautobot).
 
+> **⚠️ Alpha Software**: This project is currently in **alpha** and is under active development. APIs, configuration options, and behavior may change between releases. Use in production environments is not recommended until a stable release is published.
+
 The term SSoT, or Single Source of Truth, refers to the intention of using Nautobot to consolidate data from disparate Systems of Record to create a single resource for all automation needs. This is done by extending the [Nautobot SSoT framework](https://github.com/nautobot/nautobot-app-ssot) which uses the DiffSync library. This app is built with the capability in mind to import and export data from your desired System of Record.
-
-<!--
-Developer Note - Remove Me!
-
-The README will have certain links/images broken until the PR is merged into `develop`. Update the GitHub links with whichever branch you're using (main etc.) if different.
-
-The logo of the project is a placeholder (docs/images/icon-nautobot-ssot-servicedesk-plus.png) - please replace it with your app icon, making sure it's at least 200x200px and has a transparent background!
-
-To avoid extra work and temporary links, make sure that publishing docs (or merging a PR) is done at the same time as setting up the docs site on RTD, then test everything.
--->
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/develop/docs/images/icon-nautobot-ssot-servicedesk-plus.png" class="logo" height="200px">
@@ -27,7 +19,7 @@ To avoid extra work and temporary links, make sure that publishing docs (or merg
 
 ## Overview
 
-> Developer Note: Add a long (2-3 paragraphs) description of what the App does, what problems it solves, what functionality it adds to Nautobot, what external systems it works with etc.
+Pulls "Servers" from ServiceDesk Plus, and puts them into a particular Nautobot Role with some particular field mappings. If you would like to use this app outside of our org, you would need to fork, and change those mappings for now. I have some todos to extract this out into app config.
 
 ### Screenshots
 
@@ -42,8 +34,6 @@ More screenshots can be found in the [Using the App](https://docs.nrtc.cloud/pro
 ## Try it out!
 
 > Developer Note: Only keep this section if appropriate. Update link to correct sandbox.
-
-This App is installed in the Nautobot Community Sandbox found over at [demo.nautobot.com](https://demo.nautobot.com/)!
 
 > For a full list of all the available always-on sandbox environments, head over to the main page on [networktocode.com](https://www.networktocode.com/nautobot/sandbox-environments/).
 
@@ -67,4 +57,4 @@ Any PRs with fixes or improvements are very welcome!
 
 ## Questions
 
-For any questions or comments, please check the [FAQ](https://docs.nrtc.cloud/projects/nautobot-ssot-servicedesk-plus/en/latest/user/faq/) first. Feel free to also swing by the [Network to Code Slack](https://networktocode.slack.com/) (channel `#nautobot`), sign up [here](http://slack.networktocode.com/) if you don't have an account.
+For any questions or comments, please check the [FAQ](https://docs.nrtc.cloud/projects/nautobot-ssot-servicedesk-plus/en/latest/user/faq/) first.
