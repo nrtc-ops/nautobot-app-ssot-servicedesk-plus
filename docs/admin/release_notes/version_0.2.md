@@ -9,6 +9,12 @@ This document describes all new features and changes in the release. The format 
 
 <!-- towncrier release notes start -->
 
+## [v0.2.1a0 (2026-03-30)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.2.1a0)
+
+### Fixed
+
+- [#020a0](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/issues/020a0) - Fixed queryset filters for returning proper data from Nautobot and delete protection for fields that only need adds, finally a servicedesk entity id custom field in NB
+
 ## [v0.2.0 (2026-03-30)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.2.0)
 
 ### Fixed
