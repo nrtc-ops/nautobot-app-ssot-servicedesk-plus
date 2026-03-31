@@ -9,6 +9,12 @@ This document describes all new features and changes in the release. The format 
 
 <!-- towncrier release notes start -->
 
+## [v0.2.1a1 (2026-03-31)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.2.1a1)
+
+### Fixed
+
+- [#ssot-stamp](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/issues/ssot-stamp) - Moved the property for the SSOT stamp into the target load, so it happens everytime a valid create/update happens on a target object.
+
 ## [v0.2.1a0 (2026-03-30)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.2.1a0)
 
 ### Fixed
