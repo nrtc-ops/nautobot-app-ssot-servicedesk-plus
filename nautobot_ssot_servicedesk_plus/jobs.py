@@ -227,6 +227,7 @@ class ServicedeskPlusDataSource(DataSource):
     def load_target_adapter(self):
         """Load data from Nautobot into DiffSync models."""
         self.target_adapter = ServicedeskPlusNautobotAdapter(job=self, sync=self.sync)
+        self.target_adapter.get_or_create_metadatatype()
         self.target_adapter.load()
 
     def run(self, dryrun, memory_profiling, debug, integration, *args, **kwargs):  # pylint: disable=arguments-differ
