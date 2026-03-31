@@ -1,1 +1,0 @@
-Moved the property for the SSOT stamp into the target load, so it happens everytime a valid create/update happens on a target object.
