@@ -1,1 +1,0 @@
-ServiceDesk-imported Sites are now placed under their US state Region (parsed from the site name and created on demand under the correct Census Super Region), with an "Unassigned" holding-pen Region as a fallback. The parent is set only on create, so a later reconciliation that re-groups a Site is not reverted on subsequent syncs.
