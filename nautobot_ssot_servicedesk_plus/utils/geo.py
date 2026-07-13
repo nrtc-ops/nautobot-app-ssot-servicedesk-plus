@@ -10,6 +10,9 @@ which a separate reconciliation pass can re-group later.
 
 import re
 
+from nautobot.dcim.models import Location, LocationType
+from nautobot.extras.models import Status
+
 COUNTRY = "US"
 UNASSIGNED_REGION = "Unassigned"
 UNASSIGNED_SUPER_REGION = "Uncategorized"
@@ -102,11 +105,8 @@ def ensure_region_parent(site_name):
     Parses the state from ``site_name`` and get_or_creates
     Country(US) -> Super Region(Census) -> Region(state); unparseable names get the
     ``UNASSIGNED_REGION`` holding pen. Returns the Region name to use as the Site's
-    ``parent__name``. Imported lazily so this module stays import-safe without Django.
+    ``parent__name``.
     """
-    from nautobot.dcim.models import Location, LocationType
-    from nautobot.extras.models import Status
-
     active = Status.objects.get(name="Active")
 
     def loc(name, type_name, parent):

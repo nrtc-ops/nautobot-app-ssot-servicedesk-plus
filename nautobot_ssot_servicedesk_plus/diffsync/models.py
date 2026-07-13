@@ -8,6 +8,8 @@ from nautobot.extras.models import MetadataType
 from nautobot.tenancy.models import Tenant
 from nautobot_ssot.contrib import CustomFieldAnnotation, NautobotModel
 
+from nautobot_ssot_servicedesk_plus.utils.geo import ensure_region_parent
+
 SDP_METADATA_NAME = "Last sync from ServiceDesk Plus"
 
 
@@ -60,8 +62,6 @@ class LocationSSoTModel(NautobotModel):
         site name's US state — creating the Region on demand — and fall back to an
         'Unassigned' holding pen when the state can't be parsed.
         """
-        from nautobot_ssot_servicedesk_plus.utils.geo import ensure_region_parent
-
         attrs = dict(attrs)
         attrs["parent__name"] = ensure_region_parent(ids["name"])
         return super().create(adapter, ids, attrs)

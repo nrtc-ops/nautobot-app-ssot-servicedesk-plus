@@ -6,6 +6,8 @@ from nautobot_ssot_servicedesk_plus.utils.geo import parse_state
 
 
 class ParseStateTests(unittest.TestCase):
+    """Tests for parse_state (site name -> US state code)."""
+
     def test_trailing_abbreviation_with_comma(self):
         self.assertEqual(parse_state("Dallas, TX"), "TX")
 

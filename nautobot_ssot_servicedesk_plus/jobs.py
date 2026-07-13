@@ -15,6 +15,11 @@ from nautobot_ssot_servicedesk_plus.diffsync.adapters import (
     ServicedeskPlusNautobotAdapter,
     ServicedeskPlusRemoteAdapter,
 )
+from nautobot_ssot_servicedesk_plus.utils.geo import (
+    COUNTRY,
+    UNASSIGNED_REGION,
+    UNASSIGNED_SUPER_REGION,
+)
 from nautobot_ssot_servicedesk_plus.utils.servicedesk_plus import (
     DEFAULT_LOCATION_TYPE,
     DEFAULT_ROLE,
@@ -56,33 +61,20 @@ class ServicedeskPlusDataSource(DataSource):
         """List describing the data mappings involved in this DataSource."""
         return ()
 
-    def _ensure_prerequisites(self):
-        """Ensure required Nautobot objects exist before sync.
+    def _ensure_location_taxonomy(self, device_ct, location_ct):
+        """Ensure the geographic LocationType chain and fallback holding pen exist.
 
-        Creates LocationType, Role, and Status objects that the DiffSync models
-        reference via FK lookups. These must exist before devices/locations can be created.
+        Country -> Super Region -> Region -> Site. A Site requires a Region parent
+        (see LocationSSoTModel.create), so the wired type chain plus a
+        US -> Uncategorized -> Unassigned holding pen must exist before sync.
         """
-        device_ct = ContentType.objects.get_for_model(Device)
-        location_ct = ContentType.objects.get_for_model(Location)
-
-        # Location taxonomy: Country -> Super Region -> Region -> Site. Ensure the wired
-        # LocationType chain and a fallback holding pen exist so a Site can always be
-        # created under a Region (Site requires a Region parent — see LocationSSoTModel.create).
-        from nautobot_ssot_servicedesk_plus.utils.geo import (
-            COUNTRY,
-            UNASSIGNED_REGION,
-            UNASSIGNED_SUPER_REGION,
-        )
-
         lt_country, _ = LocationType.objects.get_or_create(name="Country")
         lt_super, _ = LocationType.objects.get_or_create(name="Super Region", defaults={"parent": lt_country})
         lt_region, _ = LocationType.objects.get_or_create(
             name="Region", defaults={"parent": lt_super, "nestable": True}
         )
-        location_type, created = LocationType.objects.get_or_create(
-            name=DEFAULT_LOCATION_TYPE, defaults={"parent": lt_region}
-        )
-        for lt in (lt_region, location_type):
+        lt_site, _ = LocationType.objects.get_or_create(name=DEFAULT_LOCATION_TYPE, defaults={"parent": lt_region})
+        for lt in (lt_region, lt_site):
             if device_ct not in lt.content_types.all():
                 lt.content_types.add(device_ct)
         self.logger.info("Ensured LocationType chain Country->Super Region->Region->%s", DEFAULT_LOCATION_TYPE)
@@ -100,6 +92,17 @@ class ServicedeskPlusDataSource(DataSource):
         Location.objects.get_or_create(
             name=UNASSIGNED_REGION, location_type=lt_region, defaults={"parent": unc_loc, "status": active_status}
         )
+
+    def _ensure_prerequisites(self):
+        """Ensure required Nautobot objects exist before sync.
+
+        Creates LocationType, Role, and Status objects that the DiffSync models
+        reference via FK lookups. These must exist before devices/locations can be created.
+        """
+        device_ct = ContentType.objects.get_for_model(Device)
+        location_ct = ContentType.objects.get_for_model(Location)
+
+        self._ensure_location_taxonomy(device_ct, location_ct)
 
         # Role "NUS"
         role, created = Role.objects.get_or_create(name=DEFAULT_ROLE)
