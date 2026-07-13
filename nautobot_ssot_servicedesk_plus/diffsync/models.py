@@ -8,6 +8,8 @@ from nautobot.extras.models import MetadataType
 from nautobot.tenancy.models import Tenant
 from nautobot_ssot.contrib import CustomFieldAnnotation, NautobotModel
 
+from nautobot_ssot_servicedesk_plus.utils.geo import ensure_region_parent
+
 SDP_METADATA_NAME = "Last sync from ServiceDesk Plus"
 
 
@@ -48,6 +50,21 @@ class LocationSSoTModel(NautobotModel):
     name: str
     location_type__name: Optional[str] = "Site"
     status__name: Optional[str] = "Active"
+    # Set only on create (see create()); intentionally NOT in _attributes so that a later
+    # reconciliation which re-groups a Site into its real Region is never reverted on sync.
+    parent__name: Optional[str] = None
+
+    @classmethod
+    def create(cls, adapter, ids, attrs):
+        """Give new Sites a Region parent (the Site LocationType requires one).
+
+        ServiceDesk can't reliably supply a geographic region, so we resolve it from the
+        site name's US state — creating the Region on demand — and fall back to an
+        'Unassigned' holding pen when the state can't be parsed.
+        """
+        attrs = dict(attrs)
+        attrs["parent__name"] = ensure_region_parent(ids["name"])
+        return super().create(adapter, ids, attrs)
 
 
 class TenantSSoTModel(NautobotModel):
