@@ -29,7 +29,11 @@ class DeviceGetQuerysetTests(TestCase):
         )
         cf.content_types.set([device_ct])
 
-        active = Status.objects.get(name="Active")
+        # get_or_create (not get) so the test is independent of DB state: a preceding
+        # TransactionTestCase in the suite truncates migration-created statuses.
+        location_ct = ContentType.objects.get_for_model(Location)
+        active, _ = Status.objects.get_or_create(name="Active")
+        active.content_types.add(device_ct, location_ct)
         manufacturer = Manufacturer.objects.create(name="Test Manufacturer")
         device_type = DeviceType.objects.create(manufacturer=manufacturer, model="Test Model")
         role = Role.objects.create(name="Test Role")
@@ -48,9 +52,16 @@ class DeviceGetQuerysetTests(TestCase):
         cls.with_id.cf["servicedesk_plus_id"] = "12345"
         cls.with_id.validated_save()
         cls.without_id = Device.objects.create(name="no-sdp-id", **common)
+        # A non-SDP device (e.g. XCP/AWS import) that carries the CF but blank. It must be
+        # excluded: several such devices would otherwise all load with an empty identifier
+        # and collide (ObjectAlreadyExists).
+        cls.blank_id = Device.objects.create(name="blank-sdp-id", **common)
+        cls.blank_id.cf["servicedesk_plus_id"] = ""
+        cls.blank_id.validated_save()
 
-    def test_loads_only_devices_with_servicedesk_plus_id(self):
-        """get_queryset returns devices carrying a servicedesk_plus_id and excludes those without."""
+    def test_loads_only_devices_with_nonempty_servicedesk_plus_id(self):
+        """get_queryset returns devices with a non-empty servicedesk_plus_id, excluding null/blank."""
         queryset = DeviceSSoTModel.get_queryset()
         self.assertIn(self.with_id, queryset)
         self.assertNotIn(self.without_id, queryset)
+        self.assertNotIn(self.blank_id, queryset)
