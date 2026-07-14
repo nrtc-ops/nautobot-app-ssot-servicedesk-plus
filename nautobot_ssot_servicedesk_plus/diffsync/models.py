@@ -127,13 +127,19 @@ class DeviceSSoTModel(NautobotModel):
         import that never applied the stamp — be matched and UPDATED instead of re-created
         (which fails on the globally-unique asset_tag / per-location-tenant name).
 
-        The empty string is excluded as well as null: unrelated devices (e.g. XCP/AWS
-        imports) carry the field blank, and loading several with an empty identifier would
-        collide (ObjectAlreadyExists) on the diffsync store.
+        Devices without a real id must be excluded: unrelated devices (XCP/AWS/Hivelocity
+        imports) carry the field absent, JSON null, or an empty string, and loading several
+        with the same empty/None identifier collides (ObjectAlreadyExists) in the diffsync
+        store. A DB-side ``__isnull=False`` filter is not enough — Django treats a key that
+        is present with a JSON ``null`` value as non-null — so we screen the value in Python,
+        where absent / None / "" all read as falsy.
         """
-        return cls._model.objects.filter(_custom_field_data__servicedesk_plus_id__isnull=False).exclude(
-            _custom_field_data__servicedesk_plus_id=""
-        )
+        pks = [
+            obj.pk
+            for obj in cls._model.objects.only("id", "_custom_field_data")
+            if str((obj.cf or {}).get("servicedesk_plus_id") or "").strip()
+        ]
+        return cls._model.objects.filter(pk__in=pks)
 
 
 class InterfaceSSoTModel(NautobotModel):

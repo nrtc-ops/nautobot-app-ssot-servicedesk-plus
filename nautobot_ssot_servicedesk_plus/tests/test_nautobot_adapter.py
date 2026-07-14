@@ -58,10 +58,17 @@ class DeviceGetQuerysetTests(TestCase):
         cls.blank_id = Device.objects.create(name="blank-sdp-id", **common)
         cls.blank_id.cf["servicedesk_plus_id"] = ""
         cls.blank_id.validated_save()
+        # A device whose CF key is present with an explicit JSON null (how Hivelocity-imported
+        # devices land in prod). A DB __isnull=False filter treats this as non-null and would
+        # wrongly load it with a None identifier; it must be excluded.
+        cls.null_id = Device.objects.create(name="null-sdp-id", **common)
+        cls.null_id.cf["servicedesk_plus_id"] = None
+        cls.null_id.save()
 
     def test_loads_only_devices_with_nonempty_servicedesk_plus_id(self):
         """get_queryset returns devices with a non-empty servicedesk_plus_id, excluding null/blank."""
         queryset = DeviceSSoTModel.get_queryset()
         self.assertIn(self.with_id, queryset)
         self.assertNotIn(self.without_id, queryset)
+        self.assertNotIn(self.null_id, queryset)
         self.assertNotIn(self.blank_id, queryset)
