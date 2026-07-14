@@ -9,6 +9,12 @@ This document describes all new features and changes in the release. The format 
 
 <!-- towncrier release notes start -->
 
+## [v0.3.3 (2026-07-14)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.3.3)
+
+### Fixed
+
+- [#27](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/issues/27) - The Nautobot device queryset now screens the `servicedesk_plus_id` value in Python so absent, JSON-null, and empty-string values are all excluded. The prior DB-side `__isnull=False` filter still loaded Hivelocity/AWS-imported devices whose custom-field key is present with an explicit JSON `null` (Django treats that as non-null), which crashed the sync with `ObjectAlreadyExists` on a `None` identifier. Only the devices with a real ServiceDesk Plus id are loaded now.
+
 ## [v0.3.2 (2026-07-14)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.3.2)
 
 ### Fixed
