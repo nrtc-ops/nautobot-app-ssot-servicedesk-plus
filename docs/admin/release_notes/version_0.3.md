@@ -9,6 +9,12 @@ This document describes all new features and changes in the release. The format 
 
 <!-- towncrier release notes start -->
 
+## [v0.3.2 (2026-07-14)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.3.2)
+
+### Fixed
+
+- [#24](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/issues/24) - The Nautobot device queryset now excludes devices whose `servicedesk_plus_id` custom field is an empty string (not just null). Unrelated devices — e.g. XCP/AWS imports — carry the field blank; loading several of them gave every one an empty identifier and crashed the sync with `ObjectAlreadyExists` before any comparison ran.
+
 ## [v0.3.1 (2026-07-14)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.3.1)
 
 ### Fixed
