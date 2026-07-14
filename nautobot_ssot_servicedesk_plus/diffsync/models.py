@@ -126,8 +126,14 @@ class DeviceSSoTModel(NautobotModel):
         SSoT metadata stamp lets devices that already carry the id — e.g. from an earlier
         import that never applied the stamp — be matched and UPDATED instead of re-created
         (which fails on the globally-unique asset_tag / per-location-tenant name).
+
+        The empty string is excluded as well as null: unrelated devices (e.g. XCP/AWS
+        imports) carry the field blank, and loading several with an empty identifier would
+        collide (ObjectAlreadyExists) on the diffsync store.
         """
-        return cls._model.objects.filter(_custom_field_data__servicedesk_plus_id__isnull=False)
+        return cls._model.objects.filter(_custom_field_data__servicedesk_plus_id__isnull=False).exclude(
+            _custom_field_data__servicedesk_plus_id=""
+        )
 
 
 class InterfaceSSoTModel(NautobotModel):
