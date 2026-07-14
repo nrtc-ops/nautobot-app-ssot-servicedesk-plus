@@ -84,8 +84,13 @@ class DeviceSSoTModel(NautobotModel):
 
     _model = Device
     _modelname = "device"
-    _identifiers = ("name",)
+    # Identify devices by the ServiceDesk Plus record id (a stable, globally-unique source
+    # key that survives rename/move), NOT by name. Nautobot uses DEVICE_UNIQUENESS=
+    # location_tenant_name (name unique per location+tenant) and a globally-unique asset_tag,
+    # so a name-based identifier fails to match existing devices and collides on create.
+    _identifiers = ("servicedesk_plus_id",)
     _attributes = (
+        "name",
         "serial",
         "asset_tag",
         "comments",
@@ -97,7 +102,6 @@ class DeviceSSoTModel(NautobotModel):
         "power_type",
         "idrac_ip",
         "idrac_op_id",
-        "servicedesk_plus_id",
     )
 
     name: str
@@ -116,12 +120,14 @@ class DeviceSSoTModel(NautobotModel):
 
     @classmethod
     def get_queryset(cls):
-        """Only load devices managed by the ServiceDesk Plus SSoT sync."""
-        try:
-            mt = MetadataType.objects.get(name=SDP_METADATA_NAME)
-            return cls._model.objects.filter(associated_object_metadata__metadata_type=mt)
-        except MetadataType.DoesNotExist:
-            return cls._model.objects.none()
+        """Load SSoT-managed devices: those carrying a servicedesk_plus_id.
+
+        Scoping by the servicedesk_plus_id custom field (the identifier) rather than by the
+        SSoT metadata stamp lets devices that already carry the id — e.g. from an earlier
+        import that never applied the stamp — be matched and UPDATED instead of re-created
+        (which fails on the globally-unique asset_tag / per-location-tenant name).
+        """
+        return cls._model.objects.filter(_custom_field_data__servicedesk_plus_id__isnull=False)
 
 
 class InterfaceSSoTModel(NautobotModel):
