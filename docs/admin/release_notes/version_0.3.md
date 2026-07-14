@@ -9,6 +9,16 @@ This document describes all new features and changes in the release. The format 
 
 <!-- towncrier release notes start -->
 
+## [v0.3.1 (2026-07-14)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.3.1)
+
+### Fixed
+
+- [#21](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/issues/21) - Devices are now identified by their ServiceDesk Plus record id (custom field `servicedesk_plus_id`) instead of by name. The Nautobot adapter loads devices carrying that id, so an existing device is matched and UPDATED rather than re-created — which previously failed on Nautobot's globally-unique `asset_tag` and per-location-tenant unique `name`.
+
+## [v0.3.1a1 (2026-07-14)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.3.1a1)
+
+No significant changes.
+
 ## [v0.3.0 (2026-07-13)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.3.0)
 
 ### Added
