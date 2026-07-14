@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nautobot-ssot-servicedesk-plus"
-version = "0.3.3a0"
+version = "0.3.4a0"
 description = "Nautobot SSOT ServiceDesk Plus"
 authors = ["NRTC DSO <devsecops@nrtc.coop>"]
 license = "Apache-2.0"
