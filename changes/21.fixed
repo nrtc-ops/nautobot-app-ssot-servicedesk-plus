@@ -1,0 +1,1 @@
+Devices are now identified by their ServiceDesk Plus record id (custom field `servicedesk_plus_id`) instead of by name. The Nautobot adapter loads devices carrying that id, so an existing device is matched and UPDATED rather than re-created — which previously failed on Nautobot's globally-unique `asset_tag` and per-location-tenant unique `name`.
