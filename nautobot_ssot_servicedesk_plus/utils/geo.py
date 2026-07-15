@@ -79,12 +79,44 @@ STATE_NAME = {
 }
 _STATE_NAME_LOWER = {v.lower(): k for k, v in STATE_NAME.items()}
 
+# Best-effort city -> state gazetteer for site names that carry a city but no state token
+# (e.g. "El Paso/Cornell"). Deliberately small and limited to unambiguous large metros;
+# SITE_REGION_OVERRIDES is the authoritative mechanism and always wins.
+CITY_STATE = {
+    "el paso": "TX",
+    "albuquerque": "NM",
+    "las vegas": "NV",
+    "salt lake city": "UT",
+    "oklahoma city": "OK",
+    "new orleans": "LA",
+    "san antonio": "TX",
+    "phoenix": "AZ",
+    "milwaukee": "WI",
+    "minneapolis": "MN",
+    "indianapolis": "IN",
+    "philadelphia": "PA",
+    "chicago": "IL",
+    "detroit": "MI",
+    "seattle": "WA",
+    "atlanta": "GA",
+    "denver": "CO",
+    "boston": "MA",
+    "honolulu": "HI",
+}
+
+# Authoritative manual site-name -> US state code overrides for names no parser can resolve
+# (company/facility names, ambiguous cities). Consulted before parsing; populate with the
+# NRTC-known location of each. Example: "Signal House": "TN".
+SITE_REGION_OVERRIDES = {}
+
 
 def parse_state(site_name):
     """Return the 2-letter US state code parsed from a site name, or None.
 
     Handles trailing 2-letter codes ("Dallas, TX", "Dallas TX"), full state names
-    ("Denver, Colorado") and parenthetical suffixes ("Windhorst, TX (Headend)").
+    ("Denver, Colorado") and parenthetical suffixes ("Windhorst, TX (Headend)"). When no
+    state token is present, applies the CITY_STATE gazetteer to the whole name and to its
+    "/", ",", ";", "-"-separated fragments ("El Paso/Cornell" -> TX).
     """
     if not site_name:
         return None
@@ -96,6 +128,9 @@ def parse_state(site_name):
     for full in sorted(_STATE_NAME_LOWER, key=len, reverse=True):
         if low.endswith(full):
             return _STATE_NAME_LOWER[full]
+    for fragment in [low, *(f.strip() for f in re.split(r"[/,;\-]", low))]:
+        if fragment in CITY_STATE:
+            return CITY_STATE[fragment]
     return None
 
 
@@ -117,7 +152,7 @@ def ensure_region_parent(site_name):
         return obj
 
     country = loc(COUNTRY, "Country", None)
-    state = parse_state(site_name)
+    state = SITE_REGION_OVERRIDES.get(site_name) or parse_state(site_name)
     if not state:
         sr = loc(UNASSIGNED_SUPER_REGION, "Super Region", country)
         loc(UNASSIGNED_REGION, "Region", sr)
