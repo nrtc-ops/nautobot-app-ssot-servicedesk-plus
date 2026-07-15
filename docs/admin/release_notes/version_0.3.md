@@ -9,6 +9,16 @@ This document describes all new features and changes in the release. The format 
 
 <!-- towncrier release notes start -->
 
+## [v0.3.4 (2026-07-15)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.3.4)
+
+### Added
+
+- [#30](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/issues/30) - Location parsing for ServiceDesk-imported Sites now resolves more names: a small city gazetteer (e.g. "El Paso/Cornell" → Texas) is consulted when no state token is present, separator-joined names are split and re-tried, and a `SITE_REGION_OVERRIDES` map lets operators pin the region for names no parser can resolve (company/facility names).
+
+### Fixed
+
+- [#30](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/issues/30) - ServiceDesk Plus is now treated as the source of truth for NUS devices: an `asset_tag` collision can no longer abort the sync. Placeholder asset_tags (`n/a`, `-`, etc.) and asset_tags duplicated across SDP records are normalized to empty on load, and a pre-sync reconcile pass resolves collisions with existing devices in SDP's favour — adopting the same physical device when the serial matches (stamping it with the SDP id), deleting a stale unclaimed NUS device otherwise, and never touching non-NUS/infrastructure devices.
+
 ## [v0.3.3 (2026-07-14)](https://github.com/nrtc-ops/nautobot-app-ssot-servicedesk-plus/releases/tag/v0.3.3)
 
 ### Fixed

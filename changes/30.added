@@ -1,1 +1,0 @@
-Location parsing for ServiceDesk-imported Sites now resolves more names: a small city gazetteer (e.g. "El Paso/Cornell" → Texas) is consulted when no state token is present, separator-joined names are split and re-tried, and a `SITE_REGION_OVERRIDES` map lets operators pin the region for names no parser can resolve (company/facility names).
