@@ -23,6 +23,16 @@ class ParseStateTests(unittest.TestCase):
     def test_parenthetical_suffix(self):
         self.assertEqual(parse_state("Windhorst, TX (Wichita Falls Headend)"), "TX")
 
+    def test_city_gazetteer_with_separator(self):
+        self.assertEqual(parse_state("El Paso/Cornell"), "TX")
+
+    def test_city_gazetteer_plain(self):
+        self.assertEqual(parse_state("El Paso"), "TX")
+
+    def test_state_token_still_wins_over_gazetteer(self):
+        # "Portland  MI" must resolve via the MI token, not a Portland city guess.
+        self.assertEqual(parse_state("Portland  MI"), "MI")
+
     def test_unparseable_returns_none(self):
         for name in ("Border2Border", "Signal House", "Test", ""):
             self.assertIsNone(parse_state(name))

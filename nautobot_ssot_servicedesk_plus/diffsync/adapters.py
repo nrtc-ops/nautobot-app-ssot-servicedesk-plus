@@ -27,6 +27,10 @@ logger = logging.getLogger(__name__)
 
 INTERFACE_NAME = "em1_bond0"
 
+# Placeholder asset_tag values that must be treated as "no asset tag" (None). Nautobot enforces
+# global asset_tag uniqueness, so a literal shared placeholder like "n/a" collides across devices.
+JUNK_ASSET_TAGS = {"", "n/a", "na", "n\\a", "none", "null", "-", "--", "tbd", "unknown"}
+
 
 class ServicedeskPlusRemoteAdapter(Adapter):  # pylint: disable=too-few-public-methods
     """DiffSync adapter for loading data from ServiceDesk Plus."""
@@ -159,6 +163,12 @@ class ServicedeskPlusRemoteAdapter(Adapter):  # pylint: disable=too-few-public-m
                 return ip
         return None
 
+    @staticmethod
+    def _normalize_asset_tag(raw):
+        """Return a real asset tag, or None for missing/placeholder values (e.g. 'n/a')."""
+        value = (raw or "").strip()
+        return None if value.lower() in JUNK_ASSET_TAGS else value
+
     def _extract_device_fields(self, workstation):
         """Extract and transform all device-related fields from a workstation.
 
@@ -189,7 +199,7 @@ class ServicedeskPlusRemoteAdapter(Adapter):  # pylint: disable=too-few-public-m
         return {
             "name": name,
             "serial": serial,
-            "asset_tag": get_nested_value(workstation, "asset_tag") or None,
+            "asset_tag": self._normalize_asset_tag(get_nested_value(workstation, "asset_tag")),
             "comments": comments,
             "status_name": status_name,
             "role_name": DEFAULT_ROLE,
@@ -249,6 +259,7 @@ class ServicedeskPlusRemoteAdapter(Adapter):  # pylint: disable=too-few-public-m
             "locations": set(),
             "tenants": set(),
             "devices": set(),
+            "asset_tags": {},
         }
 
         for workstation in workstations:
@@ -260,6 +271,21 @@ class ServicedeskPlusRemoteAdapter(Adapter):  # pylint: disable=too-few-public-m
                     self.job.logger.warning("Skipping duplicate device name: %s", name)
                 continue
             seen["devices"].add(name)
+
+            # asset_tag is globally unique in Nautobot; a value repeated across SDP records
+            # (a source data error) is kept on the first device and nulled on the rest.
+            tag = fields["asset_tag"]
+            if tag:
+                if tag in seen["asset_tags"]:
+                    self.job.logger.warning(
+                        "SDP asset_tag %s duplicated (already on %s); nulling it on %s",
+                        tag,
+                        seen["asset_tags"][tag],
+                        name,
+                    )
+                    fields["asset_tag"] = None
+                else:
+                    seen["asset_tags"][tag] = name
 
             if fields["primary_ip"]:
                 self.device_primary_ips[name] = fields["primary_ip"]

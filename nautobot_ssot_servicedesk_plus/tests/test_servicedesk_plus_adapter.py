@@ -310,6 +310,54 @@ class TestServicedeskPlusRemoteAdapter(TransactionTestCase):  # pylint: disable=
         device = self._get_device("HP-SPARE-01")
         self.assertIsNone(device.asset_tag)
 
+    def test_junk_asset_tag_normalized_to_none(self):
+        """Verify placeholder asset_tags (e.g. 'n/a') are stored as None, not a literal string."""
+        fixture = [
+            {
+                "id": "3001",
+                "name": "JUNK-TAG",
+                "asset_tag": "n/a",
+                "vendor": {"name": "DELL"},
+                "state": {"name": "In Use"},
+                "computer_system": {"service_tag": "T3001"},
+                "udf_fields": {},
+            },
+        ]
+        self.client.get_workstations.return_value = fixture
+        adapter = ServicedeskPlusRemoteAdapter(job=self.job, sync=None, client=self.client)
+        adapter.load()
+        device = list(adapter.get_all("device"))[0]
+        self.assertIsNone(device.asset_tag)
+
+    def test_duplicate_asset_tag_nulled_on_second_device(self):
+        """Verify a real asset_tag appearing twice is kept on the first device and nulled on later ones."""
+        fixture = [
+            {
+                "id": "4001",
+                "name": "DUP-A",
+                "asset_tag": "DUP1",
+                "vendor": {"name": "DELL"},
+                "state": {"name": "In Use"},
+                "computer_system": {"service_tag": "T4001"},
+                "udf_fields": {},
+            },
+            {
+                "id": "4002",
+                "name": "DUP-B",
+                "asset_tag": "DUP1",
+                "vendor": {"name": "DELL"},
+                "state": {"name": "In Use"},
+                "computer_system": {"service_tag": "T4002"},
+                "udf_fields": {},
+            },
+        ]
+        self.client.get_workstations.return_value = fixture
+        adapter = ServicedeskPlusRemoteAdapter(job=self.job, sync=None, client=self.client)
+        adapter.load()
+        by_id = {d.servicedesk_plus_id: d for d in adapter.get_all("device")}
+        self.assertEqual(by_id["4001"].asset_tag, "DUP1")
+        self.assertIsNone(by_id["4002"].asset_tag)
+
     def test_comments(self):
         """Verify description maps to comments."""
         self.adapter.load()
