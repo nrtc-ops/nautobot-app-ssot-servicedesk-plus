@@ -3,6 +3,8 @@
 import ipaddress
 
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
+from django.db.models import ProtectedError
 from nautobot.apps.jobs import BooleanVar, ObjectVar, register_jobs
 from nautobot.dcim.models import Device, Interface, Location, LocationType
 from nautobot.extras.choices import SecretsGroupAccessTypeChoices, SecretsGroupSecretTypeChoices
@@ -257,10 +259,72 @@ class ServicedeskPlusDataSource(DataSource):
         self.source_adapter = ServicedeskPlusRemoteAdapter(job=self, sync=self.sync, client=client)
         self.source_adapter.load()
 
+    def _reconcile_one_asset_tag(self, src, dry_run):
+        """Resolve one source device's asset_tag against any existing Nautobot holder.
+
+        SDP is the source of truth and servicedesk_plus_id is the identity, so a colliding
+        asset_tag is resolved in SDP's favour rather than being allowed to abort the sync:
+        adopt the same physical box (matched by serial), delete a stale unclaimed NUS record,
+        or drop the tag from this source record when another SDP device / a non-NUS device
+        legitimately holds it. Never modifies non-NUS devices.
+        """
+        tag, src_id = src.asset_tag, src.servicedesk_plus_id
+        holder = Device.objects.filter(asset_tag=tag).first()
+        if holder is None or (holder.cf or {}).get("servicedesk_plus_id") == src_id:
+            return
+        holder_sdp_id = (holder.cf or {}).get("servicedesk_plus_id")
+        holder_role = holder.role.name if holder.role else None
+        prefix = "[dry-run] would " if dry_run else ""
+
+        if holder_role != DEFAULT_ROLE:
+            self.logger.warning(
+                "asset_tag %s held by non-NUS device %s; dropping it from SDP id %s", tag, holder.name, src_id
+            )
+            src.asset_tag = None
+        elif holder_sdp_id:
+            self.logger.warning(
+                "asset_tag %s already owned by SDP id %s (%s); dropping it from SDP id %s",
+                tag,
+                holder_sdp_id,
+                holder.name,
+                src_id,
+            )
+            src.asset_tag = None
+        elif holder.serial and holder.serial == src.serial:
+            self.logger.info("%sadopt %s (serial %s) as SDP id %s", prefix, holder.name, holder.serial, src_id)
+            if not dry_run:
+                try:
+                    holder.cf["servicedesk_plus_id"] = src_id
+                    holder.validated_save()
+                except ValidationError as exc:
+                    self.logger.warning(
+                        "Adopt failed for %s (%s); dropping asset_tag from SDP id %s", holder.name, exc, src_id
+                    )
+                    src.asset_tag = None
+        else:
+            self.logger.warning(
+                "%sdelete stale NUS device %s (asset_tag %s) superseded by SDP id %s", prefix, holder.name, tag, src_id
+            )
+            if not dry_run:
+                try:
+                    holder.delete()
+                except ProtectedError as exc:
+                    self.logger.warning(
+                        "Delete failed for %s (%s); dropping asset_tag from SDP id %s", holder.name, exc, src_id
+                    )
+                    src.asset_tag = None
+
+    def _reconcile_asset_tags(self, dry_run):
+        """Pre-sync: resolve every source device's asset_tag so a collision never aborts the run."""
+        for src in self.source_adapter.get_all("device"):
+            if src.asset_tag and src.servicedesk_plus_id:
+                self._reconcile_one_asset_tag(src, dry_run)
+
     def load_target_adapter(self):
         """Load data from Nautobot into DiffSync models."""
         self.target_adapter = ServicedeskPlusNautobotAdapter(job=self, sync=self.sync)
         self.target_adapter.get_or_create_metadatatype()
+        self._reconcile_asset_tags(self.dryrun)
         self.target_adapter.load()
 
     def run(self, dryrun, memory_profiling, debug, integration, *args, **kwargs):  # pylint: disable=arguments-differ
